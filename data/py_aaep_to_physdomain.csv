@@ -1,0 +1,7 @@
+APIC,infraAttEntityP_name,infraAttEntityP_dn,infraRsDomP_name,infraRsDomP_rn
+https://sandboxapicdc.cisco.com,default,uni/infra/attentp-default,phys-em-phy-BD,rsdomP-[uni/phys-em-phy-BD]
+https://sandboxapicdc.cisco.com,SnV_phys,uni/infra/attentp-SnV_phys,phys-SnV_phys,rsdomP-[uni/phys-SnV_phys]
+https://sandboxapicdc.cisco.com,Heroes_phys,uni/infra/attentp-Heroes_phys,phys-Heroes_phys,rsdomP-[uni/phys-Heroes_phys]
+https://sandboxapicdc.cisco.com,mytest-prod-aaep,uni/infra/attentp-mytest-prod-aaep,phys-mytest-phys,rsdomP-[uni/phys-mytest-phys]
+https://sandboxapicdc.cisco.com,AEP_Phys,uni/infra/attentp-AEP_Phys,phys-TestPhysDomain,rsdomP-[uni/phys-TestPhysDomain]
+https://sandboxapicdc.cisco.com,em-AEP,uni/infra/attentp-em-AEP,phys-em-phy-BD,rsdomP-[uni/phys-em-phy-BD]

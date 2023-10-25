@@ -1,0 +1,27 @@
+
+terraform import aci_fabric_node_member.Node102_TEP-1-102 uni/controller/nodeidentpol/nodep-TEP-1-102
+terraform import aci_fabric_node_member.Node101_TEP-1-101 uni/controller/nodeidentpol/nodep-TEP-1-101
+terraform import aci_fabric_node_member.Node201_TEP-1-103 uni/controller/nodeidentpol/nodep-TEP-1-103
+
+terraform import aci_attachable_access_entity_profile.default uni/infra/attentp-default
+terraform import aci_attachable_access_entity_profile.SnV_corporate_external uni/infra/attentp-SnV_corporate_external
+terraform import aci_attachable_access_entity_profile.Heroes_corporate_external uni/infra/attentp-Heroes_corporate_external
+terraform import aci_attachable_access_entity_profile.Heroes_phys uni/infra/attentp-Heroes_phys
+terraform import aci_attachable_access_entity_profile.SnV_phys uni/infra/attentp-SnV_phys
+terraform import aci_attachable_access_entity_profile.mytest-prod-aaep uni/infra/attentp-mytest-prod-aaep
+terraform import aci_attachable_access_entity_profile.AEP_Phys uni/infra/attentp-AEP_Phys
+terraform import aci_attachable_access_entity_profile.em-AEP uni/infra/attentp-em-AEP
+terraform import aci_physical_domain.phys uni/phys-phys
+terraform import aci_physical_domain.SnV_phys uni/phys-SnV_phys
+terraform import aci_physical_domain.Heroes_phys uni/phys-Heroes_phys
+terraform import aci_physical_domain.mytest-phys uni/phys-mytest-phys
+terraform import aci_physical_domain.MATLAB_PHY_DOM uni/phys-MATLAB_PHY_DOM
+terraform import aci_physical_domain.TestPhysDomain uni/phys-TestPhysDomain
+terraform import aci_physical_domain.em-phy-BD uni/phys-em-phy-BD
+terraform import aci_physical_domain.AI_ACI_TF_DEMO_SRV uni/phys-AI_ACI_TF_DEMO_SRV
+terraform import aci_aaep_to_domain.default-phys-em-phy-BD-ASSOC uni/infra/attentp-default/rsdomP-[uni/phys-em-phy-BD]
+terraform import aci_aaep_to_domain.SnV_phys-phys-SnV_phys-ASSOC uni/infra/attentp-SnV_phys/rsdomP-[uni/phys-SnV_phys]
+terraform import aci_aaep_to_domain.Heroes_phys-phys-Heroes_phys-ASSOC uni/infra/attentp-Heroes_phys/rsdomP-[uni/phys-Heroes_phys]
+terraform import aci_aaep_to_domain.mytest-prod-aaep-phys-mytest-phys-ASSOC uni/infra/attentp-mytest-prod-aaep/rsdomP-[uni/phys-mytest-phys]
+terraform import aci_aaep_to_domain.AEP_Phys-phys-TestPhysDomain-ASSOC uni/infra/attentp-AEP_Phys/rsdomP-[uni/phys-TestPhysDomain]
+terraform import aci_aaep_to_domain.em-AEP-phys-em-phy-BD-ASSOC uni/infra/attentp-em-AEP/rsdomP-[uni/phys-em-phy-BD]
