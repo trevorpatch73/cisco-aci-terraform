@@ -1,9 +1,0 @@
-APIC,annotation,childAction,configIssues,dn,extMngdBy,lcOwn,modTs,monPolDn,name,nameAlias,ownerKey,ownerTag,status,uid,userdom
-https://sandboxapicdc.cisco.com,,,,uni/phys-phys,,local,2023-10-23T13:08:13.827+00:00,uni/fabric/monfab-default,phys,,,,,0,all
-https://sandboxapicdc.cisco.com,,,,uni/phys-SnV_phys,,local,2023-10-23T13:21:34.628+00:00,uni/fabric/monfab-default,SnV_phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-Heroes_phys,,local,2023-10-23T13:21:34.836+00:00,uni/fabric/monfab-default,Heroes_phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-mytest-phys,,local,2023-10-23T14:54:29.487+00:00,uni/fabric/monfab-default,mytest-phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-MATLAB_PHY_DOM,,local,2023-10-23T16:59:02.922+00:00,uni/fabric/monfab-default,MATLAB_PHY_DOM,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-TestPhysDomain,,local,2023-10-23T18:12:57.747+00:00,uni/fabric/monfab-default,TestPhysDomain,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-em-phy-BD,,local,2023-10-23T18:36:38.760+00:00,uni/fabric/monfab-default,em-phy-BD,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-AI_ACI_TF_DEMO_SRV,,local,2023-10-23T20:30:55.595+00:00,uni/fabric/monfab-default,AI_ACI_TF_DEMO_SRV,,,,,15374,:all:

@@ -1,9 +1,0 @@
-APIC,annotation,childAction,configIssues,creator,descr,dn,extMngdBy,lcOwn,modTs,monPolDn,name,nameAlias,ownerKey,ownerTag,status,uid,userdom
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-default,,local,2023-10-23T13:08:14.264+00:00,uni/fabric/monfab-default,default,,,,,0,all
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-SnV_corporate_external,,local,2023-10-23T13:21:33.921+00:00,uni/fabric/monfab-default,SnV_corporate_external,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-Heroes_corporate_external,,local,2023-10-23T13:21:33.921+00:00,uni/fabric/monfab-default,Heroes_corporate_external,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-Heroes_phys,,local,2023-10-23T13:21:33.921+00:00,uni/fabric/monfab-default,Heroes_phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-SnV_phys,,local,2023-10-23T13:21:33.921+00:00,uni/fabric/monfab-default,SnV_phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-mytest-prod-aaep,,local,2023-10-23T15:27:43.455+00:00,uni/fabric/monfab-default,mytest-prod-aaep,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-AEP_Phys,,local,2023-10-23T18:12:02.882+00:00,uni/fabric/monfab-default,AEP_Phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,USER,,uni/infra/attentp-em-AEP,,local,2023-10-23T18:58:41.472+00:00,uni/fabric/monfab-default,em-AEP,,,,,15374,:all:
