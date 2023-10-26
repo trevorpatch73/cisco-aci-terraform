@@ -755,7 +755,6 @@ def aaep_to_domain_file():
             print(f"'{filename}' has been created with the required headers.")
 
 def get_aaep_to_domain(token):
-    # Updated URL
     URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=children&target-subtree-class=infraAttEntityP&rsp-subtree=children&rsp-subtree-class=infraRsDomP&rsp-subtree-filter=eq(infraRsDomP.tCl,\"physDomP\")"
     
     headers = {
@@ -779,7 +778,6 @@ def get_aaep_to_domain(token):
             infraAttEntityP_dn = entry["infraAttEntityP"]["attributes"]["dn"]
             children = entry["infraAttEntityP"].get("children", [])
             
-            # Check if there are any 'infraRsDomP' children, if not, skip this entry
             if not any("infraRsDomP" in child for child in children):
                 continue
             
@@ -867,6 +865,169 @@ terraform import aci_aaep_to_domain.{{infraAttEntityP_name}}-{{infraRsDomP_name}
 
     print("Import commands for aci_aaep_to_domain appended to import_commands.txt successfully!")
     
+    
+########################################################
+### ACI ACCESS POLICIES VLAN ROOL & RANGES           ###
+########################################################
+
+def vlan_pool_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_vlan_pool.csv")
+    headers = [
+        "APIC", "fvnsVlanInstP_name", "fvnsVlanInstP_dn", 
+        "fvnsEncapBlk_from", "fvnsEncapBlk_to", "fvnsEncapBlk_rn"
+    ]
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+
+def get_vlan_pools(token):
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=children&target-subtree-class=fvnsVlanInstP&rsp-subtree-class=fvnsEncapBlk&query-target=subtree&rsp-subtree=full"
+    
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.get(URL, headers=headers, verify=False)
+    filename = os.path.join("data", "py_vlan_pool.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+        existing_entries = []
+
+        with open(filename, 'r', newline='') as file:
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+        for entry in data['imdata']:
+            vlan_pool_name = entry["fvnsVlanInstP"]["attributes"]["name"]
+            vlan_pool_dn = entry["fvnsVlanInstP"]["attributes"]["dn"]
+            children = entry["fvnsVlanInstP"].get("children", [])
+            
+            for child in children:
+                if "fvnsEncapBlk" in child:
+                    encap_from = child["fvnsEncapBlk"]["attributes"]["from"]
+                    encap_to = child["fvnsEncapBlk"]["attributes"]["to"]
+                    encap_rn = child["fvnsEncapBlk"]["attributes"]["rn"]
+                    row_as_list = [
+                        os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS'),
+                        vlan_pool_name,
+                        vlan_pool_dn,
+                        encap_from,
+                        encap_to,
+                        encap_rn
+                    ]
+                    if row_as_list not in existing_entries:
+                        existing_entries.append(row_as_list)
+
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(existing_entries)
+    else:
+        print(f"Failed to retrieve VLAN Pool mappings. Status code: {response.status_code}")
+
+def tf_ciscodevnet_aci_vlan_pool():
+    csv_filepath = os.path.join("data", "py_vlan_pool.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    vlan_pool_template = Template("""
+resource "aci_vlan_pool" "{{fvnsVlanInstP_name}}" {
+    name       = "{{fvnsVlanInstP_name}}"
+    alloc_mode = "dynamic"
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    range_template = Template("""
+resource "aci_ranges" "{{fvnsVlanInstP_name}}-{{fvnsEncapBlk_from}}-{{fvnsEncapBlk_to}}" {
+    vlan_pool_dn = aci_vlan_pool.{{fvnsVlanInstP_name}}.id
+    from         = "{{fvnsEncapBlk_from}}"
+    to           = "{{fvnsEncapBlk_to}}"
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_terraform_content = ""
+    added_vlan_pools = set()
+
+    for entry in entries:
+        if entry['fvnsVlanInstP_name'] not in added_vlan_pools:
+            new_terraform_content += vlan_pool_template.render(
+                fvnsVlanInstP_name=entry['fvnsVlanInstP_name']
+            )
+            added_vlan_pools.add(entry['fvnsVlanInstP_name'])
+
+        new_terraform_content += range_template.render(
+            fvnsVlanInstP_name=entry['fvnsVlanInstP_name'],
+            fvnsEncapBlk_from=entry['fvnsEncapBlk_from'],
+            fvnsEncapBlk_to=entry['fvnsEncapBlk_to']
+        )
+
+    with open('import.tf', 'a') as tf_file:
+        tf_file.write(new_terraform_content)
+
+    print("Terraform resources for VLAN pools and ranges appended to import.tf successfully!")
+
+def tf_ciscodevnet_aci_vlan_pool_commands():
+    csv_filepath = os.path.join("data", "py_vlan_pool.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    vlan_pool_command_template = Template("""
+terraform import aci_vlan_pool.{{fvnsVlanInstP_name}} {{fvnsVlanInstP_dn}}
+""")
+
+    range_command_template = Template("""
+terraform import aci_ranges.{{fvnsVlanInstP_name}}-{{fvnsEncapBlk_from}}-{{fvnsEncapBlk_to}} {{fvnsVlanInstP_dn}}/{{fvnsEncapBlk_rn}}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands = ""
+    added_vlan_pools = set()
+
+    for entry in entries:
+        if entry['fvnsVlanInstP_name'] not in added_vlan_pools:
+            new_commands += vlan_pool_command_template.render(
+                fvnsVlanInstP_name=entry['fvnsVlanInstP_name'],
+                fvnsVlanInstP_dn=entry['fvnsVlanInstP_dn']
+            )
+            added_vlan_pools.add(entry['fvnsVlanInstP_name'])
+
+        new_commands += range_command_template.render(
+            fvnsVlanInstP_name=entry['fvnsVlanInstP_name'],
+            fvnsEncapBlk_from=entry['fvnsEncapBlk_from'],
+            fvnsEncapBlk_to=entry['fvnsEncapBlk_to'],
+            fvnsVlanInstP_dn=entry['fvnsVlanInstP_dn'],
+            fvnsEncapBlk_rn=entry['fvnsEncapBlk_rn']
+        )
+
+    with open('import_commands.txt', 'a') as cmd_file:
+        cmd_file.write(new_commands)
+
+    print("Import commands for VLAN pools and ranges appended to import_commands.txt successfully!")
+
+    
 ########################################
 ### INVOCATION OF SCRIPT FUNCTIONS   ###
 ########################################
@@ -880,6 +1041,7 @@ fabric_blacklist_interfaces_file()
 access_policy_aaep_file()
 physical_domain_file()
 aaep_to_domain_file()
+vlan_pool_file()
 
 #AUTHENTICATION TO FABRIC
 token = get_aci_token()
@@ -890,6 +1052,7 @@ get_fabric_blacklist_interfaces(token)
 get_access_policy_aaep(token)
 get_physical_domain(token)
 get_aaep_to_domain(token)
+get_vlan_pools(token)
 
 #TERRAFORM THINGS
 tf_ciscodevnet_aci_fabric_node_member()
@@ -902,3 +1065,5 @@ tf_ciscodevnet_aci_physical_domain()
 tf_ciscodevnet_aci_physical_domain_commands()
 tf_ciscodevnet_aci_aaep_to_domain()
 tf_ciscodevnet_aci_aaep_to_domain_commands()
+tf_ciscodevnet_aci_vlan_pool()
+tf_ciscodevnet_aci_vlan_pool_commands()
