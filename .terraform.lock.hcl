@@ -1,0 +1,28 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/ciscodevnet/aci" {
+  version = "2.10.1"
+  hashes = [
+    "h1:MNO4/CskNbgBIQGlbHLCpk1Xwt/cViJKNURB5nEIHKk=",
+    "zh:0c940fea4ee5d3290156fffce5619439cb2eb576cfa553fef47972224466ab1c",
+    "zh:2c88bbff0b6b4a393005affa9d708e694ca439dc8218f813d05a4937b3b5ebff",
+    "zh:2df3f5c9a164ae1bc2df929176e6961bf710ddedfd94ce982a6cdf46d957449a",
+    "zh:2ef38f8b01fcfaaee33698d9bce243ec19b5505fd30008b5b5fca482764275c0",
+    "zh:71b528ed64ff0eb605efd4bc36e48a599b4fee042f1da138d9086d0b8c720e91",
+    "zh:8dbebb56042a2e9651f14b25e2dcb077a08d3258988b44a6190cf30f460eb4a2",
+    "zh:917fb28b9c17cc0699e6da6c4f2a38806ef825924eefcae8747deecb4ba9824d",
+    "zh:918fd34f2851bd09069ea5fdd4b20dc4e77795a94a5da5013c366f1599c1cb77",
+    "zh:944049c09f42c57fc69a40633d7923b24cdc85ca8dfeec863af0b47a3521fc7a",
+    "zh:a5cc49901e90bb41842305e68c7d17d469f8b25b47dd5e8c37401086b1784446",
+    "zh:b7ab2a00efbea3d7adda1bef35526909796ca73a2e053e5f4e1d909eb888f493",
+    "zh:ba1e849e1f2f3f532bfc1b1ef3df98c5ca28091f60685743d920ad1666625aab",
+    "zh:c3737fc1cbcd896ec42a17448fca5a5906087a975b3075bb98e1c643f5fe0521",
+    "zh:cd7f8d4bfe4158500a080a2478b8188586fec54d813607c3af193a76c4474294",
+    "zh:e412ec79ac42bf7bba0607ef3985a8f85b6d7942b331c4dcb2e531ffd556c092",
+    "zh:efcee8be9fff5ca27337438dfe620fe5c57971b798384d395ce2db2d1c995a98",
+    "zh:f584129d2db2a76386a168664c54df83260dd34cf624428ae94a77b32e19d7c6",
+    "zh:fd9a9e5f167b9d4740f80542637aa89605b5a47f49d5815325e79a02faa71a5d",
+    "zh:fe3b5663ce51985a53ca859064159398825904f8ec909eb54c05334aa420396d",
+  ]
+}

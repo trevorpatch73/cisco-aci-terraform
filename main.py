@@ -737,7 +737,7 @@ terraform import aci_physical_domain.{{name}} {{dn}}
 ### ACI ACCESS POLICIES AAEP to PHYSICAL DOMAIN      ###
 ########################################################
 
-def aaep_to_domain_file():
+def aaep_to_physdomain_file():
     directory = "data"
     filename = os.path.join(directory, "py_aaep_to_physdomain.csv")
     headers = [
@@ -754,7 +754,7 @@ def aaep_to_domain_file():
             writer.writerow(headers)
             print(f"'{filename}' has been created with the required headers.")
 
-def get_aaep_to_domain(token):
+def get_aaep_to_physdomain(token):
     URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=children&target-subtree-class=infraAttEntityP&rsp-subtree=children&rsp-subtree-class=infraRsDomP&rsp-subtree-filter=eq(infraRsDomP.tCl,\"physDomP\")"
     
     headers = {
@@ -802,16 +802,20 @@ def get_aaep_to_domain(token):
         print(f"Failed to retrieve AAEP to Domain mappings. Status code: {response.status_code}")
 
 
-def tf_ciscodevnet_aci_aaep_to_domain():
+def tf_ciscodevnet_aci_aaep_to_physdomain():
     csv_filepath = os.path.join("data", "py_aaep_to_physdomain.csv")
     with open(csv_filepath, 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         entries = list(reader)
 
     terraform_template = """
-resource "aci_aaep_to_domain" "{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASSOC" {
+resource "aci_aaep_to_physdomain" "{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASSOC" {
     attachable_access_entity_profile_dn = aci_attachable_access_entity_profile.{{infraAttEntityP_name}}.id
     domain_dn                           = aci_physical_domain.{{infraRsDomP_name}}.id
+    
+    lifecycle {
+        ignore_changes = all
+    }    
 }
 """
 
@@ -833,15 +837,15 @@ resource "aci_aaep_to_domain" "{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASS
     with open('import.tf', 'a') as tf_file:
         tf_file.write(new_terraform_content)
 
-    print("Terraform resources, aci_aaep_to_domain, appended to import.tf successfully!")
+    print("Terraform resources, aci_aaep_to_physdomain, appended to import.tf successfully!")
 
-def tf_ciscodevnet_aci_aaep_to_domain_commands():
+def tf_ciscodevnet_aci_aaep_to_physdomain_commands():
     with open(os.path.join('data', 'py_aaep_to_physdomain.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         entries = list(reader)
 
     command_template = Template("""
-terraform import aci_aaep_to_domain.{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASSOC {{infraAttEntityP_dn}}/{{infraRsDomP_rn}}
+terraform import aci_aaep_to_physdomain.{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASSOC {{infraAttEntityP_dn}}/{{infraRsDomP_rn}}
 """)
 
     with open('import_commands.txt', 'a+') as cmd_file:
@@ -863,7 +867,7 @@ terraform import aci_aaep_to_domain.{{infraAttEntityP_name}}-{{infraRsDomP_name}
     with open('import_commands.txt', 'a') as tf_file:
         tf_file.write(new_commands)
 
-    print("Import commands for aci_aaep_to_domain appended to import_commands.txt successfully!")
+    print("Import commands for aci_aaep_to_physdomain appended to import_commands.txt successfully!")
     
     
 ########################################################
@@ -943,6 +947,7 @@ def tf_ciscodevnet_aci_vlan_pool():
 resource "aci_vlan_pool" "{{fvnsVlanInstP_name}}" {
     name       = "{{fvnsVlanInstP_name}}"
     alloc_mode = "dynamic"
+    
     lifecycle {
         ignore_changes = all
     }
@@ -954,6 +959,7 @@ resource "aci_ranges" "{{fvnsVlanInstP_name}}-{{fvnsEncapBlk_from}}-{{fvnsEncapB
     vlan_pool_dn = aci_vlan_pool.{{fvnsVlanInstP_name}}.id
     from         = "{{fvnsEncapBlk_from}}"
     to           = "{{fvnsEncapBlk_to}}"
+    
     lifecycle {
         ignore_changes = all
     }
@@ -1027,6 +1033,201 @@ terraform import aci_ranges.{{fvnsVlanInstP_name}}-{{fvnsEncapBlk_from}}-{{fvnsE
 
     print("Import commands for VLAN pools and ranges appended to import_commands.txt successfully!")
 
+#################################################################################
+### ACI ACCESS POLICIES LEAF INTERFACE PROFILES, SELECTORS & BLOCKS           ###
+#################################################################################
+
+def interface_profile_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_interface_profile.csv")
+    headers = [
+        "APIC", "infraAccPortP_name", "infraAccPortP_dn",
+        "infraHPortS_name", "infraHPortS_rn", "infraPortBlk_fromCard",
+        "infraPortBlk_fromPort", "infraPortBlk_toCard", "infraPortBlk_toPort", "infraPortBlk_rn"
+    ]
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+
+def get_interface_profiles(token):
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=subtree&target-subtree-class=infraAccPortP&query-target=children&target-subtree-class=infraAccPortP&rsp-subtree=full&rsp-subtree-class=infraHPortS,infraPortBlk,infraSubPortBlk"
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get(URL, headers=headers, verify=False)
+    filename = os.path.join("data", "py_interface_profile.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+        existing_entries = []
+
+        with open(filename, 'r', newline='') as file:
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+        for entry in data['imdata']:
+            infraAccPortP_name = entry["infraAccPortP"]["attributes"]["name"]
+            infraAccPortP_dn = entry["infraAccPortP"]["attributes"]["dn"]
+            children = entry["infraAccPortP"].get("children", [])
+
+            for child in children:
+                if "infraHPortS" in child:
+                    infraHPortS_name = child["infraHPortS"]["attributes"]["name"]
+                    infraHPortS_rn = child["infraHPortS"]["attributes"]["rn"]
+                    selector_children = child["infraHPortS"].get("children", [])
+
+                    for selector_child in selector_children:
+                        if "infraPortBlk" in selector_child:
+                            infraPortBlk_fromCard = selector_child["infraPortBlk"]["attributes"]["fromCard"]
+                            infraPortBlk_fromPort = selector_child["infraPortBlk"]["attributes"]["fromPort"]
+                            infraPortBlk_toCard = selector_child["infraPortBlk"]["attributes"]["toCard"]
+                            infraPortBlk_toPort = selector_child["infraPortBlk"]["attributes"]["toPort"]
+                            infraPortBlk_rn = selector_child["infraPortBlk"]["attributes"]["rn"]
+
+                            row_as_list = [
+                                os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS'),
+                                infraAccPortP_name,
+                                infraAccPortP_dn,
+                                infraHPortS_name,
+                                infraHPortS_rn,
+                                infraPortBlk_fromCard,
+                                infraPortBlk_fromPort,
+                                infraPortBlk_toCard,
+                                infraPortBlk_toPort,
+                                infraPortBlk_rn
+                            ]
+
+                            if row_as_list not in existing_entries:
+                                existing_entries.append(row_as_list)
+
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(existing_entries)
+
+    else:
+        print(f"Failed to retrieve Interface Profiles. Status code: {response.status_code}")
+
+def tf_ciscodevnet_aci_interface_profile():
+    csv_filepath = os.path.join("data", "py_interface_profile.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    interface_profile_template = Template("""
+resource "aci_leaf_interface_profile" "{{infraAccPortP_name}}" {
+    name = "{{infraAccPortP_name}}"
+    
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    access_port_selector_template = Template("""
+resource "aci_access_port_selector" "{{infraAccPortP_name}}-{{infraHPortS_name}}" {
+    leaf_interface_profile_dn = aci_leaf_interface_profile.{{infraAccPortP_name}}.id
+    name                      = "{{infraHPortS_name}}"
+    access_port_selector_type = "range"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    access_port_block_template = Template("""
+resource "aci_access_port_block" "{{infraAccPortP_name}}-{{infraHPortS_name}}-E{{infraPortBlk_fromCard}}_{{infraPortBlk_fromPort}}-E{{infraPortBlk_toCard}}_{{infraPortBlk_toPort}}" {
+    access_port_selector_dn = aci_access_port_selector.{{infraAccPortP_name}}-{{infraHPortS_name}}.id
+    from_card               = "{{infraPortBlk_fromCard}}"
+    from_port               = "{{infraPortBlk_fromPort}}"
+    to_card                 = "{{infraPortBlk_toCard}}"
+    to_port                 = "{{infraPortBlk_toPort}}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_terraform_content = ""
+    added_interface_profiles = set()
+
+    for entry in entries:
+        interface_profile_id = f"{entry['infraAccPortP_name']}-{entry['infraHPortS_name']}"
+        if entry['infraAccPortP_name'] not in added_interface_profiles:
+            new_terraform_content += interface_profile_template.render(
+                infraAccPortP_name=entry['infraAccPortP_name']
+            )
+            added_interface_profiles.add(entry['infraAccPortP_name'])
+
+        if interface_profile_id not in existing_content:
+            new_terraform_content += access_port_selector_template.render(
+                infraAccPortP_name=entry['infraAccPortP_name'],
+                infraHPortS_name=entry['infraHPortS_name']
+            )
+            new_terraform_content += access_port_block_template.render(
+                infraAccPortP_name=entry['infraAccPortP_name'],
+                infraHPortS_name=entry['infraHPortS_name'],
+                infraPortBlk_fromCard=entry['infraPortBlk_fromCard'],
+                infraPortBlk_fromPort=entry['infraPortBlk_fromPort'],
+                infraPortBlk_toCard=entry['infraPortBlk_toCard'],
+                infraPortBlk_toPort=entry['infraPortBlk_toPort']
+            )
+
+    if new_terraform_content:
+        with open('import.tf', 'a') as tf_file:
+            tf_file.write(new_terraform_content)
+
+def tf_ciscodevnet_aci_interface_profile_commands():
+    csv_filepath = os.path.join("data", "py_interface_profile.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    command_template = Template("""
+terraform import aci_leaf_interface_profile.{{infraAccPortP_name}} {{infraAccPortP_dn}}
+terraform import aci_access_port_selector.{{infraAccPortP_name}}-{{infraHPortS_name}} uni/infra/accportprof-{{infraAccPortP_name}}/{{infraHPortS_rn}}
+terraform import aci_access_port_block.{{infraAccPortP_name}}-{{infraHPortS_name}}-E{{infraPortBlk_fromCard}}_{{infraPortBlk_fromPort}}-E{{infraPortBlk_toCard}}_{{infraPortBlk_toPort}} uni/infra/accportprof-{{infraAccPortP_name}}/{{infraHPortS_rn}}/{{infraPortBlk_rn}}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands_content = ""
+    added_interface_profiles = set()
+
+    for entry in entries:
+        interface_profile_id = f"{entry['infraAccPortP_name']}-{entry['infraHPortS_name']}"
+        if entry['infraAccPortP_name'] not in added_interface_profiles:
+            new_commands_content += command_template.render(
+                infraAccPortP_name=entry['infraAccPortP_name'],
+                infraHPortS_name=entry['infraHPortS_name'],
+                infraAccPortP_dn=entry['infraAccPortP_dn'],
+                infraHPortS_rn=entry['infraHPortS_rn'],
+                infraPortBlk_fromCard=entry['infraPortBlk_fromCard'],
+                infraPortBlk_fromPort=entry['infraPortBlk_fromPort'],
+                infraPortBlk_toCard=entry['infraPortBlk_toCard'],
+                infraPortBlk_toPort=entry['infraPortBlk_toPort'],
+                infraPortBlk_rn=entry['infraPortBlk_rn']
+            )
+            added_interface_profiles.add(entry['infraAccPortP_name'])
+
+    if new_commands_content:
+        with open('import_commands.txt', 'a') as cmd_file:
+            cmd_file.write(new_commands_content)                
     
 ########################################
 ### INVOCATION OF SCRIPT FUNCTIONS   ###
@@ -1040,8 +1241,9 @@ fabric_inventory_file()
 fabric_blacklist_interfaces_file()
 access_policy_aaep_file()
 physical_domain_file()
-aaep_to_domain_file()
+aaep_to_physdomain_file()
 vlan_pool_file()
+interface_profile_file()
 
 #AUTHENTICATION TO FABRIC
 token = get_aci_token()
@@ -1051,8 +1253,9 @@ get_fabric_nodes(token)
 get_fabric_blacklist_interfaces(token)
 get_access_policy_aaep(token)
 get_physical_domain(token)
-get_aaep_to_domain(token)
+get_aaep_to_physdomain(token)
 get_vlan_pools(token)
+get_interface_profiles(token)
 
 #TERRAFORM THINGS
 tf_ciscodevnet_aci_fabric_node_member()
@@ -1063,7 +1266,9 @@ tf_ciscodevnet_aci_access_policy_aaep()
 tf_ciscodevnet_aci_access_policy_aaep_commands()
 tf_ciscodevnet_aci_physical_domain()
 tf_ciscodevnet_aci_physical_domain_commands()
-tf_ciscodevnet_aci_aaep_to_domain()
-tf_ciscodevnet_aci_aaep_to_domain_commands()
+tf_ciscodevnet_aci_aaep_to_physdomain()
+tf_ciscodevnet_aci_aaep_to_physdomain_commands()
 tf_ciscodevnet_aci_vlan_pool()
 tf_ciscodevnet_aci_vlan_pool_commands()
+tf_ciscodevnet_aci_interface_profile()
+tf_ciscodevnet_aci_interface_profile_commands()
