@@ -1,7 +1,0 @@
-APIC,annotation,childAction,configIssues,dn,extMngdBy,lcOwn,modTs,monPolDn,name,nameAlias,ownerKey,ownerTag,status,uid,userdom
-https://sandboxapicdc.cisco.com,,,,uni/phys-phys,,local,2023-10-27T19:05:57.647+00:00,uni/fabric/monfab-default,phys,,,,,0,all
-https://sandboxapicdc.cisco.com,,,,uni/phys-sothy_phys,,local,2023-10-29T04:46:45.607+00:00,uni/fabric/monfab-default,sothy_phys,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-mud-physical-domain,,local,2023-10-29T10:24:37.909+00:00,uni/fabric/monfab-default,mud-physical-domain,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-RG-VCF-MGD-NSXEDGE-UPLINKS-PD,,local,2023-10-30T15:19:05.588+00:00,uni/fabric/monfab-default,RG-VCF-MGD-NSXEDGE-UPLINKS-PD,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-sdk_test_physdom_2,,local,2023-10-30T15:59:11.172+00:00,uni/fabric/monfab-default,sdk_test_physdom_2,,,,,15374,:all:
-https://sandboxapicdc.cisco.com,,,,uni/phys-sdk_test_physdom_1,,local,2023-10-30T15:59:11.153+00:00,uni/fabric/monfab-default,sdk_test_physdom_1,,,,,15374,:all:

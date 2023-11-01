@@ -1,4 +1,0 @@
-APIC,infraAttEntityP_name,infraAttEntityP_dn,infraRsDomP_name,infraRsDomP_rn
-https://sandboxapicdc.cisco.com,sothy_aeep,uni/infra/attentp-sothy_aeep,phys-sothy_phys,rsdomP-[uni/phys-sothy_phys]
-https://sandboxapicdc.cisco.com,mud-aaep1,uni/infra/attentp-mud-aaep1,phys-mud-physical-domain,rsdomP-[uni/phys-mud-physical-domain]
-https://sandboxapicdc.cisco.com,RG-VCF-MGD-NSXEDGE-UPLINKS-AAEP,uni/infra/attentp-RG-VCF-MGD-NSXEDGE-UPLINKS-AAEP,phys-RG-VCF-MGD-NSXEDGE-UPLINKS-PD,rsdomP-[uni/phys-RG-VCF-MGD-NSXEDGE-UPLINKS-PD]
