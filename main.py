@@ -1373,6 +1373,132 @@ terraform import aci_leaf_access_port_policy_group.{{infraAccPortGrp_name}} {{in
 
     print("Import Commands for Leaf Access Port Policy Groups appended to import.tf successfully!")
     
+####################################################################
+### ACI ACCESS POLICIES LEAF ACCESS BUNDLE POLICY GROUPS         ###
+####################################################################
+
+def leaf_access_bundle_policy_group_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_leaf_access_bundle_policy_group.csv")
+    headers = [
+        "APIC", "infraAccBndlGrp_name", "infraAccBndlGrp_dn"
+    ]
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+
+def get_leaf_access_bundle_policy_groups(token):
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra/funcprof.json?query-target=subtree&target-subtree-class=infraAccBndlGrp"
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get(URL, headers=headers, verify=False)
+    filename = os.path.join("data", "py_leaf_access_bundle_policy_group.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+        existing_entries = []
+
+        with open(filename, mode='r', newline='') as file:
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+        for entry in data['imdata']:
+            infraAccBndlGrp_name = entry["infraAccBndlGrp"]["attributes"]["name"]
+            infraAccBndlGrp_dn = entry["infraAccBndlGrp"]["attributes"]["dn"]
+
+            row_as_list = [
+                os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS'),
+                infraAccBndlGrp_name,
+                infraAccBndlGrp_dn
+            ]
+
+            if row_as_list not in existing_entries[1:]:  # Skip the header when checking for existence
+                existing_entries.append(row_as_list)
+
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(existing_entries)
+    else:
+        print(f"Failed to retrieve Bundle Policy Groups. Status code: {response.status_code}")
+
+def tf_ciscodevnet_aci_leaf_access_bundle_policy_group():
+    csv_filepath = os.path.join("data", "py_leaf_access_bundle_policy_group.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    hcl_template = Template("""
+resource "aci_leaf_access_bundle_policy_group" "{{ infraAccBndlGrp_name }}" {
+  name        = "{{ infraAccBndlGrp_name }}"
+  lifecycle {
+    ignore_changes = all
+  }
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_hcl_content = ""
+    for entry in entries:
+        specific_resource_line = f'resource "aci_leaf_access_bundle_policy_group" "{entry["infraAccBndlGrp_name"]}"'
+
+        if specific_resource_line not in existing_content:
+            new_hcl_content += hcl_template.render(
+                infraAccBndlGrp_name=entry['infraAccBndlGrp_name']
+            )
+        else:
+            print(f"Entry {entry['infraAccBndlGrp_name']} already exists in import.tf")
+
+    if new_hcl_content:
+        with open('import.tf', 'a') as tf_file:
+            tf_file.write(new_hcl_content)
+
+    print("Terraform resources for Leaf Access Bundle Policy Groups appended to import.tf successfully!")
+
+def tf_ciscodevnet_aci_leaf_access_bundle_policy_group_commands():
+    csv_filepath = os.path.join("data", "py_leaf_access_bundle_policy_group.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    command_template = Template("""
+terraform import aci_leaf_access_bundle_policy_group.{{ infraAccBndlGrp_name }} {{ infraAccBndlGrp_dn }}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands_content = ""
+    for entry in entries:
+        specific_command_line = f"terraform import aci_leaf_access_bundle_policy_group.{entry['infraAccBndlGrp_name']}"
+
+        if specific_command_line not in existing_content:
+            new_commands_content += command_template.render(
+                infraAccBndlGrp_name=entry['infraAccBndlGrp_name'],
+                infraAccBndlGrp_dn=entry['infraAccBndlGrp_dn']
+            )
+        else:
+            print(f"Command for {entry['infraAccBndlGrp_name']} already exists in import_commands.sh")
+
+    if new_commands_content:
+        with open('import_commands.txt', 'a') as cmd_file:
+            cmd_file.write(new_commands_content)
+
+    print("Import commands for Leaf Access Bundle Policy Groups appended to import_commands.sh successfully!")
+
+    
 ########################################
 ### INVOCATION OF SCRIPT FUNCTIONS   ###
 ########################################
@@ -1389,6 +1515,7 @@ aaep_to_physdomain_file()
 vlan_pool_file()
 interface_profile_file()
 leaf_access_port_policy_group_file()
+leaf_access_bundle_policy_group_file()
 
 #AUTHENTICATION TO FABRIC
 token = get_aci_token()
@@ -1402,6 +1529,7 @@ get_aaep_to_physdomain(token)
 get_vlan_pools(token)
 get_interface_profiles(token)
 get_leaf_access_port_policy_groups(token)
+get_leaf_access_bundle_policy_groups(token)
 
 #TERRAFORM THINGS
 tf_ciscodevnet_aci_fabric_node_member()
@@ -1420,3 +1548,5 @@ tf_ciscodevnet_aci_interface_profile()
 tf_ciscodevnet_aci_interface_profile_commands()
 tf_ciscodevnet_aci_leaf_access_port_policy_group()
 tf_ciscodevnet_aci_leaf_access_port_policy_group_commands()
+tf_ciscodevnet_aci_leaf_access_bundle_policy_group()
+tf_ciscodevnet_aci_leaf_access_bundle_policy_group_commands()
