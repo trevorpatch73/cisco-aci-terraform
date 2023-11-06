@@ -49,7 +49,7 @@ def get_aci_token():
             "attributes": {
                 "name": USERNAME,
                 "pwd": PASSWORD
-            }
+            }split
         }
     }
     
@@ -409,7 +409,7 @@ terraform import aci_interface_blacklist.P{{pod_id}}_N{{node_id}}_{{interface_na
             print(f"Warning: Could not parse tDn for entry {entry['tDn']}")
             continue
 
-        interface_name = interface.replace("/", "_")  # Change / to _ for the resource name
+        interface_name = interface.replace("/", "_")
 
         if "extpaths" in entry['tDn']:
             command = template_fex.render(pod_id=pod_id, node_id=node_id, fex_id=fex_id, interface=interface, interface_name=interface_name)
@@ -779,7 +779,7 @@ def get_aaep_to_physdomain(token):
             
             for child in children:
                 if "infraRsDomP" in child:
-                    infraRsDomP_name = child["infraRsDomP"]["attributes"]["tDn"].split("/")[-1]
+                    infraRsDomP_name = child["infraRsDomP"]["attributes"]["tDn"].split("-")[-1]
                     infraRsDomP_rn = child["infraRsDomP"]["attributes"]["rn"]
                     row_as_list = [
                         os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS'),
@@ -805,9 +805,9 @@ def tf_ciscodevnet_aci_aaep_to_physdomain():
         entries = list(reader)
 
     terraform_template = Template("""
-resource "aci_aaep_to_physdomain" "{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASSOC" {
-    attachable_access_entity_profile_dn = aci_attachable_access_entity_profile.{{infraAttEntityP_name}}.id
-    domain_dn                           = aci_physical_domain.{{infraRsDomP_name}}.id
+resource "aci_aaep_to_physdomain" "{{ infraAttEntityP_name }}-{{ infraRsDomP_name }}-ASSOC" {
+    attachable_access_entity_profile_dn = aci_attachable_access_entity_profile.{{ infraAttEntityP_name }}.id
+    domain_dn                           = aci_physical_domain.{{ infraRsDomP_name }}.id
     
     lifecycle {
         ignore_changes = all
@@ -822,18 +822,21 @@ resource "aci_aaep_to_physdomain" "{{infraAttEntityP_name}}-{{infraRsDomP_name}}
     new_terraform_content = ""
 
     for entry in entries:
-        terraform_block = terraform_template.render(
-            infraAttEntityP_name=entry['infraAttEntityP_name'],
-            infraRsDomP_name=entry['infraRsDomP_name']
-        )
-        if terraform_block not in existing_content:
+        specific_resource = f'aci_aaep_to_physdomain."{entry["infraAttEntityP_name"]}-{entry["infraRsDomP_name"]}-ASSOC"'
+        if specific_resource not in existing_content:
+            terraform_block = terraform_template.render(
+                infraAttEntityP_name=entry['infraAttEntityP_name'],
+                infraRsDomP_name=entry['infraRsDomP_name']
+            )
             new_terraform_content += terraform_block
+        else:
+            print(f"Resource {specific_resource} already exists in import.tf")
 
     if new_terraform_content:
         with open('import.tf', 'a') as tf_file:
             tf_file.write(new_terraform_content)
 
-    print("Terraform resources, aci_aaep_to_physdomain, appended to import.tf successfully!")
+    print("Terraform resources for aci_aaep_to_physdomain appended to import.tf successfully!")
 
 def tf_ciscodevnet_aci_aaep_to_physdomain_commands():
     csv_filepath = os.path.join('data', 'py_aaep_to_physdomain.csv')
@@ -842,7 +845,7 @@ def tf_ciscodevnet_aci_aaep_to_physdomain_commands():
         entries = list(reader)
 
     command_template = Template("""
-terraform import aci_aaep_to_physdomain.{{infraAttEntityP_name}}-{{infraRsDomP_name}}-ASSOC {{infraAttEntityP_dn}}/{{infraRsDomP_rn}}
+terraform import aci_aaep_to_physdomain.{{ infraAttEntityP_name }}-{{ infraRsDomP_name }}-ASSOC {{ infraAttEntityP_dn }}/{{ infraRsDomP_rn }}
 """)
 
     with open('import_commands.txt', 'a+') as cmd_file:
@@ -852,21 +855,24 @@ terraform import aci_aaep_to_physdomain.{{infraAttEntityP_name}}-{{infraRsDomP_n
     new_commands = ""
 
     for entry in entries:
-        terraform_command = command_template.render(
-            infraAttEntityP_name=entry['infraAttEntityP_name'],
-            infraRsDomP_name=entry['infraRsDomP_name'],
-            infraAttEntityP_dn=entry['infraAttEntityP_dn'],
-            infraRsDomP_rn=entry['infraRsDomP_rn']
-        )
-        if terraform_command not in existing_content:
+        specific_command = f'aci_aaep_to_physdomain."{entry["infraAttEntityP_name"]}-{entry["infraRsDomP_name"]}-ASSOC"'
+        if specific_command not in existing_content:
+            terraform_command = command_template.render(
+                infraAttEntityP_name=entry['infraAttEntityP_name'],
+                infraRsDomP_name=entry['infraRsDomP_name'],
+                infraAttEntityP_dn=entry['infraAttEntityP_dn'],
+                infraRsDomP_rn=entry['infraRsDomP_rn']
+            )
             new_commands += terraform_command
+        else:
+            print(f"Command for {specific_command} already exists in import_commands.txt")
 
     if new_commands:
         with open('import_commands.txt', 'a') as cmd_file:
             cmd_file.write(new_commands)
 
     print("Import commands for aci_aaep_to_physdomain appended to import_commands.txt successfully!")
-    
+
 ########################################################
 ### ACI ACCESS POLICIES VLAN ROOL & RANGES           ###
 ########################################################
@@ -1421,7 +1427,7 @@ def get_leaf_access_bundle_policy_groups(token):
                 infraAccBndlGrp_dn
             ]
 
-            if row_as_list not in existing_entries[1:]:  # Skip the header when checking for existence
+            if row_as_list not in existing_entries[1:]:
                 existing_entries.append(row_as_list)
 
         with open(filename, mode='w', newline='') as file:
@@ -1543,7 +1549,6 @@ def get_l3_domain(token):
     
     if response.status_code == 403:
         print("Received a 403 error. Refreshing token...")
-        # You should implement the token refresh logic here
         token = get_aci_token()
         headers["Cookie"] = f"APIC-Cookie={token}"
         response = requests.get(URL, headers=headers, verify=False)
@@ -1623,7 +1628,6 @@ resource "aci_l3_domain_profile" "{{ name }}" {
 
     print("Terraform resources for ACI L3 Domain Profiles appended to import.tf successfully!")
 
-
 def tf_ciscodevnet_aci_l3_domain_commands():
     csv_filepath = os.path.join('data', 'py_l3_domain.csv')
     with open(csv_filepath, 'r') as csv_file:
@@ -1658,6 +1662,151 @@ terraform import aci_l3_domain_profile.{{ name }} {{ dn }}
 
     print("Import commands for ACI L3 Domain Profiles appended to import_commands.txt successfully!")
     
+########################################################
+### ACI ACCESS POLICIES AAEP to L3OUT DOMAIN         ###
+########################################################
+
+def aaep_to_l3outdomain_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_aaep_to_l3outdomain.csv")
+    headers = [
+        "APIC","infraAttEntityP_name", "infraAttEntityP_dn", 
+        "infraRsDomP_name", "infraRsDomP_rn"
+    ]
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+
+def get_aaep_to_l3outdomain(token):
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=children&target-subtree-class=infraAttEntityP&rsp-subtree=children&rsp-subtree-class=infraRsDomP&rsp-subtree-filter=eq(infraRsDomP.tCl,\"l3extDomP\")"
+    
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.get(URL, headers=headers, verify=False)
+    filename = os.path.join("data", "py_aaep_to_l3outdomain.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+        existing_entries = []
+
+        with open(filename, 'r', newline='') as file:
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+        for entry in data['imdata']:
+            infraAttEntityP_name = entry["infraAttEntityP"]["attributes"]["name"]
+            infraAttEntityP_dn = entry["infraAttEntityP"]["attributes"]["dn"]
+            children = entry["infraAttEntityP"].get("children", [])
+            
+            if not any("infraRsDomP" in child for child in children):
+                continue
+            
+            for child in children:
+                if "infraRsDomP" in child:
+                    infraRsDomP_name = child["infraRsDomP"]["attributes"]["tDn"].split("-")[-1]
+                    infraRsDomP_rn = child["infraRsDomP"]["attributes"]["rn"]
+                    row_as_list = [
+                        os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS'),
+                        infraAttEntityP_name,
+                        infraAttEntityP_dn,
+                        infraRsDomP_name,
+                        infraRsDomP_rn
+                    ]
+                    if row_as_list not in existing_entries:
+                        existing_entries.append(row_as_list)
+
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(existing_entries)
+    else:
+        print(f"Failed to retrieve AAEP to Domain mappings. Status code: {response.status_code}")
+
+
+def tf_ciscodevnet_aci_aaep_to_l3outdomain():
+    csv_filepath = os.path.join("data", "py_aaep_to_l3outdomain.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    terraform_template = Template("""
+resource "aci_aaep_to_l3outdomain" "{{ infraAttEntityP_name }}-{{ infraRsDomP_name }}-ASSOC" {
+    attachable_access_entity_profile_dn = aci_attachable_access_entity_profile.{{ infraAttEntityP_name }}.id
+    domain_dn                           = aci_l3_domain_profile.{{ infraRsDomP_name }}.id
+    
+    lifecycle {
+        ignore_changes = all
+    }    
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_terraform_content = ""
+
+    for entry in entries:
+        specific_resource = f'aci_aaep_to_l3outdomain."{entry["infraAttEntityP_name"]}-{entry["infraRsDomP_name"]}-ASSOC"'
+        if specific_resource not in existing_content:
+            terraform_block = terraform_template.render(
+                infraAttEntityP_name=entry['infraAttEntityP_name'],
+                infraRsDomP_name=entry['infraRsDomP_name']
+            )
+            new_terraform_content += terraform_block
+        else:
+            print(f"Resource {specific_resource} already exists in import.tf")
+
+    if new_terraform_content:
+        with open('import.tf', 'a') as tf_file:
+            tf_file.write(new_terraform_content)
+
+    print("Terraform resources for aci_aaep_to_l3outdomain appended to import.tf successfully!")
+
+def tf_ciscodevnet_aci_aaep_to_l3outdomain_commands():
+    csv_filepath = os.path.join('data', 'py_aaep_to_l3outdomain.csv')
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    command_template = Template("""
+terraform import aci_aaep_to_l3outdomain.{{ infraAttEntityP_name }}-{{ infraRsDomP_name }}-ASSOC {{ infraAttEntityP_dn }}/{{ infraRsDomP_rn }}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands = ""
+
+    for entry in entries:
+        specific_command = f'aci_aaep_to_l3outdomain."{entry["infraAttEntityP_name"]}-{entry["infraRsDomP_name"]}-ASSOC"'
+        if specific_command not in existing_content:
+            terraform_command = command_template.render(
+                infraAttEntityP_name=entry['infraAttEntityP_name'],
+                infraRsDomP_name=entry['infraRsDomP_name'],
+                infraAttEntityP_dn=entry['infraAttEntityP_dn'],
+                infraRsDomP_rn=entry['infraRsDomP_rn']
+            )
+            new_commands += terraform_command
+        else:
+            print(f"Command for {specific_command} already exists in import_commands.txt")
+
+    if new_commands:
+        with open('import_commands.txt', 'a') as cmd_file:
+            cmd_file.write(new_commands)
+
+    print("Import commands for aci_aaep_to_l3outdomain appended to import_commands.txt successfully!")
+   
+
 ########################################
 ### INVOCATION OF SCRIPT FUNCTIONS   ###
 ########################################
@@ -1671,6 +1820,7 @@ fabric_blacklist_interfaces_file()
 access_policy_aaep_file()
 physical_domain_file()
 aaep_to_physdomain_file()
+aaep_to_l3outdomain_file()
 vlan_pool_file()
 interface_profile_file()
 leaf_access_port_policy_group_file()
@@ -1690,6 +1840,7 @@ get_interface_profiles(token)
 get_leaf_access_port_policy_groups(token)
 get_leaf_access_bundle_policy_groups(token)
 get_l3_domain(token)
+get_aaep_to_l3outdomain(token)
 
 
 get_aaep_to_physdomain(token)
@@ -1717,3 +1868,5 @@ tf_ciscodevnet_aci_l3_domain_commands()
 
 tf_ciscodevnet_aci_aaep_to_physdomain()
 tf_ciscodevnet_aci_aaep_to_physdomain_commands()
+tf_ciscodevnet_aci_aaep_to_l3outdomain()
+tf_ciscodevnet_aci_aaep_to_l3outdomain_commands()
