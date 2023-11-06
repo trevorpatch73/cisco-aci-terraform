@@ -1498,6 +1498,165 @@ terraform import aci_leaf_access_bundle_policy_group.{{ infraAccBndlGrp_name }} 
 
     print("Import commands for Leaf Access Bundle Policy Groups appended to import_commands.sh successfully!")
 
+########################################################
+### ACI ACCESS POLICIES L3OUT DOMAIN                 ###
+########################################################
+
+def l3_domain_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_l3_domain.csv")
+    headers = [
+        "APIC", "annotation", "childAction", "configIssues", "dn",
+        "extMngdBy", "lcOwn", "modTs", "monPolDn", "name", "nameAlias",
+        "ownerKey", "ownerTag", "status", "targetDscp", "uid", "userdom"
+    ]
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+    else:
+        with open(filename, 'r', newline='') as file:
+            reader = csv.reader(file)
+            current_headers = next(reader)
+
+        if set(headers) != set(current_headers):
+            print(f"'{filename}' does not have the correct headers. You may want to regenerate it.")
+            with open(filename, 'w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(headers)
+            print(f"'{filename}' has been recreated with the required headers.")
+
+def get_l3_domain(token):
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni.json?query-target=subtree&target-subtree-class=l3extDomP"
+    
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.get(URL, headers=headers, verify=False)
+    
+    if response.status_code == 403:
+        print("Received a 403 error. Refreshing token...")
+        # You should implement the token refresh logic here
+        token = get_aci_token()
+        headers["Cookie"] = f"APIC-Cookie={token}"
+        response = requests.get(URL, headers=headers, verify=False)
+
+    filename = os.path.join("data", "py_l3_domain.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+
+        existing_entries = []
+        with open(filename, 'r', newline='') as file:
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+        for entry in data['imdata']:
+            attributes = entry["l3extDomP"]["attributes"]
+            row_as_list = [
+                os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS'),
+                attributes.get("annotation"),
+                attributes.get("childAction"),
+                attributes.get("configIssues"),
+                attributes.get("dn"),
+                attributes.get("extMngdBy"),
+                attributes.get("lcOwn"),
+                attributes.get("modTs"),
+                attributes.get("monPolDn"),
+                attributes.get("name"),
+                attributes.get("nameAlias"),
+                attributes.get("ownerKey"),
+                attributes.get("ownerTag"),
+                attributes.get("status"),
+                attributes.get("targetDscp"),
+                attributes.get("uid"),
+                attributes.get("userdom"),
+            ]
+            if row_as_list not in existing_entries:
+                existing_entries.append(row_as_list)
+
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(existing_entries)
+    else:
+        print(f"Failed to retrieve L3 domains. Status code: {response.status_code}")
+        
+def tf_ciscodevnet_aci_l3_domain():
+    csv_filepath = os.path.join("data", "py_l3_domain.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    hcl_template = Template("""
+resource "aci_l3_domain_profile" "{{ name }}" {
+    name  = "{{ name }}"
+    
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_hcl_content = ""
+    for entry in entries:
+        specific_resource_line = f'resource "aci_l3_domain_profile" "{entry["name"]}"'
+
+        if specific_resource_line not in existing_content:
+            new_hcl_content += hcl_template.render(name=entry['name'])
+        else:
+            print(f"Entry {entry['name']} already exists in import.tf")
+
+    if new_hcl_content:
+        with open('import.tf', 'a') as tf_file:
+            tf_file.write(new_hcl_content)
+
+    print("Terraform resources for ACI L3 Domain Profiles appended to import.tf successfully!")
+
+
+def tf_ciscodevnet_aci_l3_domain_commands():
+    csv_filepath = os.path.join('data', 'py_l3_domain.csv')
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    command_template = Template("""
+terraform import aci_l3_domain_profile.{{ name }} {{ dn }}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands_content = ""
+    for entry in entries:
+        name_resource = entry['name'].replace(" ", "_")
+
+        specific_command_line = f"terraform import aci_l3_domain_profile.{name_resource}"
+
+        if specific_command_line not in existing_content:
+            new_commands_content += command_template.render(
+                name=name_resource,
+                dn=entry['dn']
+            )
+        else:
+            print(f"Command for {entry['name']} already exists in import_commands.txt")
+
+    if new_commands_content:
+        with open('import_commands.txt', 'a') as cmd_file:
+            cmd_file.write(new_commands_content)
+
+    print("Import commands for ACI L3 Domain Profiles appended to import_commands.txt successfully!")
     
 ########################################
 ### INVOCATION OF SCRIPT FUNCTIONS   ###
@@ -1516,6 +1675,7 @@ vlan_pool_file()
 interface_profile_file()
 leaf_access_port_policy_group_file()
 leaf_access_bundle_policy_group_file()
+l3_domain_file()
 
 #AUTHENTICATION TO FABRIC
 token = get_aci_token()
@@ -1525,11 +1685,14 @@ get_fabric_nodes(token)
 get_fabric_blacklist_interfaces(token)
 get_access_policy_aaep(token)
 get_physical_domain(token)
-get_aaep_to_physdomain(token)
 get_vlan_pools(token)
 get_interface_profiles(token)
 get_leaf_access_port_policy_groups(token)
 get_leaf_access_bundle_policy_groups(token)
+get_l3_domain(token)
+
+
+get_aaep_to_physdomain(token)
 
 #TERRAFORM THINGS
 tf_ciscodevnet_aci_fabric_node_member()
@@ -1540,8 +1703,6 @@ tf_ciscodevnet_aci_access_policy_aaep()
 tf_ciscodevnet_aci_access_policy_aaep_commands()
 tf_ciscodevnet_aci_physical_domain()
 tf_ciscodevnet_aci_physical_domain_commands()
-tf_ciscodevnet_aci_aaep_to_physdomain()
-tf_ciscodevnet_aci_aaep_to_physdomain_commands()
 tf_ciscodevnet_aci_vlan_pool()
 tf_ciscodevnet_aci_vlan_pool_commands()
 tf_ciscodevnet_aci_interface_profile()
@@ -1550,3 +1711,9 @@ tf_ciscodevnet_aci_leaf_access_port_policy_group()
 tf_ciscodevnet_aci_leaf_access_port_policy_group_commands()
 tf_ciscodevnet_aci_leaf_access_bundle_policy_group()
 tf_ciscodevnet_aci_leaf_access_bundle_policy_group_commands()
+tf_ciscodevnet_aci_l3_domain()
+tf_ciscodevnet_aci_l3_domain_commands()
+
+
+tf_ciscodevnet_aci_aaep_to_physdomain()
+tf_ciscodevnet_aci_aaep_to_physdomain_commands()
