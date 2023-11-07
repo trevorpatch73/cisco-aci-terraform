@@ -49,7 +49,7 @@ def get_aci_token():
             "attributes": {
                 "name": USERNAME,
                 "pwd": PASSWORD
-            }split
+            }
         }
     }
     
