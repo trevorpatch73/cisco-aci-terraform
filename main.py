@@ -1827,7 +1827,6 @@ def fabric_access_leaf_interface_profiles_file():
             print(f"'{filename}' has been created with the required headers.")
             
 def get_fabric_access_leaf_interface_profiles(token):
-    ACI_BASE_URL = os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS')
     URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=subtree&target-subtree-class=infraAccPortP"
     
     headers = {
@@ -1933,7 +1932,7 @@ terraform import aci_leaf_interface_profile.tf_{{ infraAccPortP_name }} {{ infra
 
 def fabric_access_switch_profiles_file():
     directory = "data"
-    filename = os.path.join(directory, "py_fabric_switch_interface_profiles.csv")
+    filename = os.path.join(directory, "py_fabric_access_switch_profiles.csv")
     headers = [
         "APIC","infraNodeP_dn", "infraNodeP_name", 
         "infraRsAccPortP_name", "infraRsAccPortP_tDn",
@@ -1951,7 +1950,6 @@ def fabric_access_switch_profiles_file():
             print(f"'{filename}' has been created with the required headers.")
             
 def get_fabric_access_switch_profiles(token):
-    ACI_BASE_URL = os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS')
     URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=children&target-subtree-class=infraNodeP&query-target-filter=not(wcard(infraNodeP.dn,%22__ui_%22))&rsp-subtree=full&rsp-subtree-class=infraLeafS,infraRsAccPortP,infraRsAccCardP,infraNodeBlk,infraRsAccNodePGrp"
     
     headers = {
@@ -1960,7 +1958,7 @@ def get_fabric_access_switch_profiles(token):
     }
     
     response = requests.get(URL, headers=headers, verify=False)
-    filename = os.path.join("data", "py_fabric_switch_interface_profiles.csv")
+    filename = os.path.join("data", "py_fabric_access_switch_profiles.csv")
 
     if response.status_code == 200:
         data = response.json()
@@ -1996,7 +1994,7 @@ def get_fabric_access_switch_profiles(token):
                                     infraNodeBlk_from = nodeBlk["from_"]
                                     infraNodeBlk_to = nodeBlk["to_"]
 
-                                    if infraRsAccPortP_name and infraRsAccPortP_tDn:  # Ensure these variables are set before using
+                                    if infraRsAccPortP_name and infraRsAccPortP_tDn:
                                         row_as_list = [
                                             ACI_BASE_URL,
                                             infraNodeP_dn, infraNodeP_name, 
@@ -2008,12 +2006,12 @@ def get_fabric_access_switch_profiles(token):
                                         if row_as_list not in existing_entries:
                                             writer.writerow(row_as_list)
     else:
-        print(f"Failed to retrieve fabric switch interface profiles. Status code: {response.status_code}")
+        print(f"Failed to retrieve fabric switch profiles. Status code: {response.status_code}")
         print("Response:", response.text)
 
 
 def tf_ciscodevnet_aci_fabric_access_switch_profiles():
-    csv_filepath = os.path.join("data", "py_fabric_switch_interface_profiles.csv")
+    csv_filepath = os.path.join("data", "py_fabric_access_switch_profiles.csv")
     with open(csv_filepath, 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         entries = list(reader)
@@ -2064,7 +2062,7 @@ resource "aci_leaf_profile" "tf_{{ infraNodeP_name | replace('-', '_') }}" {
     print("Terraform resources for ACI Fabric Access Switch Profiles appended to import.tf successfully!")
 
 def tf_ciscodevnet_aci_fabric_access_switch_profiles_commands():
-    csv_filepath = os.path.join('data', 'py_fabric_switch_interface_profiles.csv')
+    csv_filepath = os.path.join('data', 'py_fabric_access_switch_profiles.csv')
     with open(csv_filepath, 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         entries = list(reader)
