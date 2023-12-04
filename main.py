@@ -1962,30 +1962,27 @@ def get_fabric_access_switch_profiles(token):
 
     if response.status_code == 200:
         data = response.json()
-        existing_entries = []
 
         with open(filename, 'a+', newline='') as file:
             writer = csv.writer(file)
             file.seek(0)
-            reader = csv.reader(file)
-            existing_entries.extend(list(reader))
+            existing_entries = [row for row in csv.reader(file)]
 
             for entry in data['imdata']:
                 if "infraNodeP" in entry:
                     nodeP = entry["infraNodeP"]
                     infraNodeP_dn = nodeP["attributes"]["dn"]
                     infraNodeP_name = nodeP["attributes"]["name"]
-
-                    infraRsAccPortP_name = None
-                    infraRsAccPortP_tDn = None
+                    infraLeafS_name = None
+                    infraNodeBlk_from = None
+                    infraNodeBlk_to = None
 
                     for child in nodeP.get("children", []):
                         if "infraRsAccPortP" in child:
                             rsAccPortP = child["infraRsAccPortP"]["attributes"]
                             infraRsAccPortP_name = rsAccPortP["rn"].split('-')[-1].rstrip(']')
                             infraRsAccPortP_tDn = rsAccPortP["tDn"]
-
-                        if "infraLeafS" in child:
+                        elif "infraLeafS" in child:
                             leafS = child["infraLeafS"]
                             infraLeafS_name = leafS["attributes"]["name"]
                             for leaf_child in leafS.get("children", []):
@@ -1994,21 +1991,23 @@ def get_fabric_access_switch_profiles(token):
                                     infraNodeBlk_from = nodeBlk["from_"]
                                     infraNodeBlk_to = nodeBlk["to_"]
 
-                                    if infraRsAccPortP_name and infraRsAccPortP_tDn:
-                                        row_as_list = [
-                                            ACI_BASE_URL,
-                                            infraNodeP_dn, infraNodeP_name, 
-                                            infraRsAccPortP_name, infraRsAccPortP_tDn, 
-                                            infraLeafS_name, infraLeafS_name,  
-                                            infraNodeBlk_from, infraNodeBlk_to
-                                        ]
+                    # Prepare row data
+                    row_as_list = [
+                        ACI_BASE_URL,
+                        infraNodeP_dn, infraNodeP_name,
+                        infraRsAccPortP_name, infraRsAccPortP_tDn,
+                        infraLeafS_name, infraLeafS_name,
+                        infraNodeBlk_from, infraNodeBlk_to
+                    ]
 
-                                        if row_as_list not in existing_entries:
-                                            writer.writerow(row_as_list)
+                    # Check for missing data and fill with a placeholder if needed
+                    row_as_list = [item if item is not None else 'N/A' for item in row_as_list]
+
+                    if row_as_list not in existing_entries:
+                        writer.writerow(row_as_list)
     else:
         print(f"Failed to retrieve fabric switch profiles. Status code: {response.status_code}")
         print("Response:", response.text)
-
 
 def tf_ciscodevnet_aci_fabric_access_switch_profiles():
     csv_filepath = os.path.join("data", "py_fabric_access_switch_profiles.csv")
