@@ -1977,13 +1977,16 @@ def get_fabric_access_switch_profiles(token):
                     nodeP = entry["infraNodeP"]
                     infraNodeP_dn = nodeP["attributes"]["dn"]
                     infraNodeP_name = nodeP["attributes"]["name"]
-    
+
+                    infraRsAccPortP_name = None
+                    infraRsAccPortP_tDn = None
+
                     for child in nodeP.get("children", []):
                         if "infraRsAccPortP" in child:
                             rsAccPortP = child["infraRsAccPortP"]["attributes"]
-                            infraRsAccPortP_name = rsAccPortP["rn"].split('-')[-1].rstrip(']')  # Corrected here
+                            infraRsAccPortP_name = rsAccPortP["rn"].split('-')[-1].rstrip(']')
                             infraRsAccPortP_tDn = rsAccPortP["tDn"]
-    
+
                         if "infraLeafS" in child:
                             leafS = child["infraLeafS"]
                             infraLeafS_name = leafS["attributes"]["name"]
@@ -1992,20 +1995,22 @@ def get_fabric_access_switch_profiles(token):
                                     nodeBlk = leaf_child["infraNodeBlk"]["attributes"]
                                     infraNodeBlk_from = nodeBlk["from_"]
                                     infraNodeBlk_to = nodeBlk["to_"]
-    
-                                    row_as_list = [
-                                        ACI_BASE_URL,
-                                        infraNodeP_dn, infraNodeP_name, 
-                                        infraRsAccPortP_name, infraRsAccPortP_tDn, 
-                                        infraLeafS_name, infraLeafS_name,  
-                                        infraNodeBlk_from, infraNodeBlk_to
-                                    ]
-    
-                                    if row_as_list not in existing_entries:
-                                        writer.writerow(row_as_list)
+
+                                    if infraRsAccPortP_name and infraRsAccPortP_tDn:  # Ensure these variables are set before using
+                                        row_as_list = [
+                                            ACI_BASE_URL,
+                                            infraNodeP_dn, infraNodeP_name, 
+                                            infraRsAccPortP_name, infraRsAccPortP_tDn, 
+                                            infraLeafS_name, infraLeafS_name,  
+                                            infraNodeBlk_from, infraNodeBlk_to
+                                        ]
+
+                                        if row_as_list not in existing_entries:
+                                            writer.writerow(row_as_list)
     else:
         print(f"Failed to retrieve fabric switch interface profiles. Status code: {response.status_code}")
         print("Response:", response.text)
+
 
 def tf_ciscodevnet_aci_fabric_access_switch_profiles():
     csv_filepath = os.path.join("data", "py_fabric_switch_interface_profiles.csv")
