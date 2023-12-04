@@ -1,0 +1,16 @@
+
+
+terraform import aci_leaf_interface_profile.tf_1105_INTPROF uni/infra/accportprof-1105_INTPROF
+terraform import aci_leaf_interface_profile.tf_1106_INTPROF uni/infra/accportprof-1106_INTPROF
+terraform import aci_leaf_interface_profile.tf_1105-1106_INTPROF uni/infra/accportprof-1105-1106_INTPROF
+terraform import aci_leaf_interface_profile.tf_1107-1108_INTPROF uni/infra/accportprof-1107-1108_INTPROF
+terraform import aci_leaf_interface_profile.tf_1108_INTPROF uni/infra/accportprof-1108_INTPROF
+terraform import aci_leaf_interface_profile.tf_1107_INTPROF uni/infra/accportprof-1107_INTPROF
+terraform import aci_leaf_interface_profile.tf_ZF-6R-LEAF-2107 uni/infra/accportprof-ZF-6R-LEAF-2107
+terraform import aci_leaf_interface_profile.tf_ZF-6R-LEAF-2108 uni/infra/accportprof-ZF-6R-LEAF-2108
+terraform import aci_leaf_profile.tf_1105_1106_SWPROF uni/infra/nprof-1105-1106_SWPROF
+terraform import aci_leaf_profile.tf_1107_1108_SWPROF uni/infra/nprof-1107-1108_SWPROF
+terraform import aci_leaf_profile.tf_1106_SWPROF uni/infra/nprof-1106_SWPROF
+terraform import aci_leaf_profile.tf_1105_SWPROF uni/infra/nprof-1105_SWPROF
+terraform import aci_leaf_profile.tf_1108_SWPROF uni/infra/nprof-1108_SWPROF
+terraform import aci_leaf_profile.tf_1107_SWPROF uni/infra/nprof-1107_SWPROF

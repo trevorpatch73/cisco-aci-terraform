@@ -1973,6 +1973,9 @@ def get_fabric_access_switch_profiles(token):
                     nodeP = entry["infraNodeP"]
                     infraNodeP_dn = nodeP["attributes"]["dn"]
                     infraNodeP_name = nodeP["attributes"]["name"]
+
+                    infraRsAccPortP_name = None
+                    infraRsAccPortP_tDn = None
                     infraLeafS_name = None
                     infraNodeBlk_from = None
                     infraNodeBlk_to = None
@@ -2000,14 +2003,21 @@ def get_fabric_access_switch_profiles(token):
                         infraNodeBlk_from, infraNodeBlk_to
                     ]
 
+                    # Debugging: Print out the row data
+                    print("Row data:", row_as_list)
+
                     # Check for missing data and fill with a placeholder if needed
                     row_as_list = [item if item is not None else 'N/A' for item in row_as_list]
 
                     if row_as_list not in existing_entries:
                         writer.writerow(row_as_list)
+                        print("Row written to CSV:", row_as_list)
+                    else:
+                        print("Row already in CSV:", row_as_list)
     else:
         print(f"Failed to retrieve fabric switch profiles. Status code: {response.status_code}")
         print("Response:", response.text)
+
 
 def tf_ciscodevnet_aci_fabric_access_switch_profiles():
     csv_filepath = os.path.join("data", "py_fabric_access_switch_profiles.csv")
