@@ -8,6 +8,7 @@ locals {
       SWITCH_ROLE          = fabric_node_membership_iteration.SWITCH_ROLE
       SWITCH_POD_ID        = fabric_node_membership_iteration.SWITCH_POD_ID
       SWITCH_NODE_ID       = fabric_node_membership_iteration.SWITCH_NODE_ID
+      VPC_PEER_GROUP       = fabric_node_membership_iteration.VPC_PEER_GROUP
       SNOW_RECORD          = fabric_node_membership_iteration.SNOW_RECORD
     }
   }
@@ -16,4 +17,12 @@ locals {
     for key, value in local.AciFabricNodeMembers : key => value
     if value.SWITCH_ROLE == "leaf" ||  value.SWITCH_ROLE == "spine"
   }
+  
+  FilteredLeafRoleAciFabricNodeMembers = {
+    for key, value in local.AciFabricNodeMembers : key => value
+    if value.SWITCH_ROLE == "leaf"
+  }
+  
+  UniqueVpcPeerGroupId = toset(distinct([for value in local.FilteredLeafRoleAciFabricNodeMembers : value.VPC_PEER_GROUP]))
+  
 }

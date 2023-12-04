@@ -1805,7 +1805,289 @@ terraform import aci_aaep_to_l3outdomain.{{ infraAttEntityP_name }}-{{ infraRsDo
             cmd_file.write(new_commands)
 
     print("Import commands for aci_aaep_to_l3outdomain appended to import_commands.txt successfully!")
-   
+
+##########################################################
+### ACI Fabric Access Policy Leaf Interface Profiles   ###
+##########################################################
+
+def fabric_access_leaf_interface_profiles_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_fabric_access_leaf_interface_profiles.csv")
+    headers = [
+        "APIC", "infraAccPortP_name", "infraAccPortP_dn"
+    ]
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+            
+def get_fabric_access_leaf_interface_profiles(token):
+    ACI_BASE_URL = os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS')
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=subtree&target-subtree-class=infraAccPortP"
+    
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.get(URL, headers=headers, verify=False)
+    filename = os.path.join("data", "py_fabric_access_leaf_interface_profiles.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+        existing_entries = []
+
+        with open(filename, 'a+', newline='') as file:
+            writer = csv.writer(file)
+            file.seek(0)
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+            for entry in data['imdata']:
+                infraAccPortP_name = entry["infraAccPortP"]["attributes"]["name"]
+                infraAccPortP_dn = entry["infraAccPortP"]["attributes"]["dn"]
+                row_as_list = [ACI_BASE_URL, infraAccPortP_name, infraAccPortP_dn]
+
+                if row_as_list not in existing_entries:
+                    writer.writerow(row_as_list)
+    else:
+        print(f"Failed to retrieve Access Leaf Interface Profiles. Status code: {response.status_code}")
+
+def tf_ciscodevnet_aci_fabric_access_leaf_interface_profiles():
+    csv_filepath = os.path.join("data", "py_fabric_access_leaf_interface_profiles.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    terraform_template = Template("""
+resource "aci_leaf_interface_profile" "tf_{{ infraAccPortP_name }}" {
+    name = "{{ infraAccPortP_name }}"
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_terraform_content = ""
+    for entry in entries:
+        specific_resource = f'resource "aci_leaf_interface_profile" "tf_{entry["infraAccPortP_name"]}"'
+        if specific_resource not in existing_content:
+            terraform_block = terraform_template.render(
+                infraAccPortP_name=entry['infraAccPortP_name']
+            )
+            new_terraform_content += terraform_block
+        else:
+            print(f"Resource {specific_resource} already exists in import.tf")
+
+    if new_terraform_content:
+        with open('import.tf', 'a') as tf_file:
+            tf_file.write(new_terraform_content)
+
+    print("Terraform resources for ACI Fabric Access Interface Profiles appended to import.tf successfully!")
+
+def tf_ciscodevnet_aci_fabric_access_leaf_interface_profiles_commands():
+    csv_filepath = os.path.join('data', 'py_fabric_access_leaf_interface_profiles.csv')
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    command_template = Template("""
+terraform import aci_leaf_interface_profile.tf_{{ infraAccPortP_name }} {{ infraAccPortP_dn }}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands = ""
+    for entry in entries:
+        specific_command = f'aci_leaf_interface_profile."{entry["infraAccPortP_name"]}"'
+        if specific_command not in existing_content:
+            terraform_command = command_template.render(
+                infraAccPortP_name=entry['infraAccPortP_name'],
+                infraAccPortP_dn=entry['infraAccPortP_dn']
+            )
+            new_commands += terraform_command
+        else:
+            print(f"Command for {specific_command} already exists in import_commands.txt")
+
+    if new_commands:
+        with open('import_commands.txt', 'a') as cmd_file:
+            cmd_file.write(new_commands)
+
+    print("Import commands for  ACI Fabric Access Interface Profiles appended to import_commands.txt successfully!")
+
+        
+##################################################
+### ACI Fabric Access Policy Switch Profiles   ###
+##################################################
+
+def fabric_access_switch_profiles_file():
+    directory = "data"
+    filename = os.path.join(directory, "py_fabric_switch_interface_profiles.csv")
+    headers = [
+        "APIC","infraNodeP_dn", "infraNodeP_name", 
+        "infraRsAccPortP_name", "infraRsAccPortP_tDn",
+        "infraLeafS_name", "infraLeafS_name",  
+        "infraNodeBlk_from", "infraNodeBlk_to"
+    ]
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            print(f"'{filename}' has been created with the required headers.")
+            
+def get_fabric_access_switch_profiles(token):
+    ACI_BASE_URL = os.environ.get('TF_VAR_CISCO_ACI_APIC_IP_ADDRESS')
+    URL = f"{ACI_BASE_URL}/api/node/mo/uni/infra.json?query-target=children&target-subtree-class=infraNodeP&query-target-filter=not(wcard(infraNodeP.dn,%22__ui_%22))&rsp-subtree=full&rsp-subtree-class=infraLeafS,infraRsAccPortP,infraRsAccCardP,infraNodeBlk,infraRsAccNodePGrp"
+    
+    headers = {
+        "Cookie": f"APIC-Cookie={token}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.get(URL, headers=headers, verify=False)
+    filename = os.path.join("data", "py_fabric_switch_interface_profiles.csv")
+
+    if response.status_code == 200:
+        data = response.json()
+        existing_entries = []
+
+        with open(filename, 'a+', newline='') as file:
+            writer = csv.writer(file)
+            file.seek(0)
+            reader = csv.reader(file)
+            existing_entries.extend(list(reader))
+
+            for entry in data['imdata']:
+                if "infraNodeP" in entry:
+                    nodeP = entry["infraNodeP"]
+                    infraNodeP_dn = nodeP["attributes"]["dn"]
+                    infraNodeP_name = nodeP["attributes"]["name"]
+    
+                    for child in nodeP.get("children", []):
+                        if "infraRsAccPortP" in child:
+                            rsAccPortP = child["infraRsAccPortP"]["attributes"]
+                            infraRsAccPortP_name = rsAccPortP["rn"].split('-')[-1].rstrip(']')  # Corrected here
+                            infraRsAccPortP_tDn = rsAccPortP["tDn"]
+    
+                        if "infraLeafS" in child:
+                            leafS = child["infraLeafS"]
+                            infraLeafS_name = leafS["attributes"]["name"]
+                            for leaf_child in leafS.get("children", []):
+                                if "infraNodeBlk" in leaf_child:
+                                    nodeBlk = leaf_child["infraNodeBlk"]["attributes"]
+                                    infraNodeBlk_from = nodeBlk["from_"]
+                                    infraNodeBlk_to = nodeBlk["to_"]
+    
+                                    row_as_list = [
+                                        ACI_BASE_URL,
+                                        infraNodeP_dn, infraNodeP_name, 
+                                        infraRsAccPortP_name, infraRsAccPortP_tDn, 
+                                        infraLeafS_name, infraLeafS_name,  
+                                        infraNodeBlk_from, infraNodeBlk_to
+                                    ]
+    
+                                    if row_as_list not in existing_entries:
+                                        writer.writerow(row_as_list)
+    else:
+        print(f"Failed to retrieve fabric switch interface profiles. Status code: {response.status_code}")
+        print("Response:", response.text)
+
+def tf_ciscodevnet_aci_fabric_access_switch_profiles():
+    csv_filepath = os.path.join("data", "py_fabric_switch_interface_profiles.csv")
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    terraform_template = Template("""
+resource "aci_leaf_profile" "tf_{{ infraNodeP_name | replace('-', '_') }}" {
+    name = "{{ infraNodeP_name }}"
+    leaf_selector {
+        name = "{{ infraLeafS_name }}"
+        switch_association_type = "range"
+        node_block {
+            name = "blk1"
+            from_ = "{{ infraNodeBlk_from }}"
+            to_ = "{{ infraNodeBlk_to }}"
+        }
+    }
+    relation_infra_rs_acc_port_p = [aci_leaf_interface_profile.tf_{{ infraRsAccPortP_name | replace('-', '_') }}.id]
+    lifecycle {
+        ignore_changes = all
+    }
+}
+""")
+
+    with open('import.tf', 'a+') as tf_file:
+        tf_file.seek(0)
+        existing_content = tf_file.read()
+
+    new_terraform_content = ""
+    for entry in entries:
+        infraNodeP_name_sanitized = entry['infraNodeP_name'].replace('-', '_')
+        specific_resource = f'resource "aci_leaf_profile" "tf_{infraNodeP_name_sanitized}"'
+        if specific_resource not in existing_content:
+            terraform_block = terraform_template.render(
+                infraNodeP_name=infraNodeP_name_sanitized,
+                infraLeafS_name=entry['infraLeafS_name'],
+                infraNodeBlk_from=entry['infraNodeBlk_from'],
+                infraNodeBlk_to=entry['infraNodeBlk_to'],
+                infraRsAccPortP_name=entry['infraRsAccPortP_name'].replace('-', '_')
+            )
+            new_terraform_content += terraform_block
+        else:
+            print(f"Resource {specific_resource} already exists in import.tf")
+
+    if new_terraform_content:
+        with open('import.tf', 'a') as tf_file:
+            tf_file.write(new_terraform_content)
+
+    print("Terraform resources for ACI Fabric Access Switch Profiles appended to import.tf successfully!")
+
+def tf_ciscodevnet_aci_fabric_access_switch_profiles_commands():
+    csv_filepath = os.path.join('data', 'py_fabric_switch_interface_profiles.csv')
+    with open(csv_filepath, 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        entries = list(reader)
+
+    command_template = Template("""
+terraform import aci_leaf_profile.tf_{{ infraNodeP_name | replace('-', '_') }} {{ infraNodeP_dn }}
+""")
+
+    with open('import_commands.txt', 'a+') as cmd_file:
+        cmd_file.seek(0)
+        existing_content = cmd_file.read()
+
+    new_commands = ""
+
+    for entry in entries:
+        infraNodeP_name_sanitized = entry['infraNodeP_name'].replace('-', '_')
+        specific_command_leaf = f'aci_leaf_profile."tf_{infraNodeP_name_sanitized}"'
+        if specific_command_leaf not in existing_content:
+            terraform_command = command_template.render(infraNodeP_name=infraNodeP_name_sanitized, infraNodeP_dn=entry['infraNodeP_dn'])
+            new_commands += terraform_command
+        else:
+            print(f"Command for {specific_command_leaf} already exists in import_commands.txt")
+
+    if new_commands:
+        with open('import_commands.txt', 'a') as cmd_file:
+            cmd_file.write(new_commands)
+
+    print("Import commands for ACI Fabric Access Switch Profiles appended to import_commands.txt successfully!")
 
 ########################################
 ### INVOCATION OF SCRIPT FUNCTIONS   ###
@@ -1815,6 +2097,7 @@ terraform import aci_aaep_to_l3outdomain.{{ infraAttEntityP_name }}-{{ infraRsDo
 # FILES THAT NEED BUILT        
 terraform_import_file()
 terraform_command_file()
+"""
 fabric_inventory_file()
 fabric_blacklist_interfaces_file()
 access_policy_aaep_file()
@@ -1826,11 +2109,15 @@ interface_profile_file()
 leaf_access_port_policy_group_file()
 leaf_access_bundle_policy_group_file()
 l3_domain_file()
+"""
+fabric_access_leaf_interface_profiles_file()
+fabric_access_switch_profiles_file()
 
 #AUTHENTICATION TO FABRIC
 token = get_aci_token()
 
 #API CALLS TO CSV FILES
+"""
 get_fabric_nodes(token)
 get_fabric_blacklist_interfaces(token)
 get_access_policy_aaep(token)
@@ -1841,11 +2128,16 @@ get_leaf_access_port_policy_groups(token)
 get_leaf_access_bundle_policy_groups(token)
 get_l3_domain(token)
 get_aaep_to_l3outdomain(token)
+"""
+get_fabric_access_leaf_interface_profiles(token)
+get_fabric_access_switch_profiles(token)
 
-
+"""
 get_aaep_to_physdomain(token)
+"""
 
 #TERRAFORM THINGS
+"""
 tf_ciscodevnet_aci_fabric_node_member()
 tf_ciscodevnet_aci_fabric_node_member_commands()
 tf_ciscodevnet_aci_interface_blacklist()
@@ -1864,9 +2156,14 @@ tf_ciscodevnet_aci_leaf_access_bundle_policy_group()
 tf_ciscodevnet_aci_leaf_access_bundle_policy_group_commands()
 tf_ciscodevnet_aci_l3_domain()
 tf_ciscodevnet_aci_l3_domain_commands()
-
-
+"""
+tf_ciscodevnet_aci_fabric_access_leaf_interface_profiles()
+tf_ciscodevnet_aci_fabric_access_leaf_interface_profiles_commands()
+tf_ciscodevnet_aci_fabric_access_switch_profiles()
+tf_ciscodevnet_aci_fabric_access_switch_profiles_commands()
+"""
 tf_ciscodevnet_aci_aaep_to_physdomain()
 tf_ciscodevnet_aci_aaep_to_physdomain_commands()
 tf_ciscodevnet_aci_aaep_to_l3outdomain()
 tf_ciscodevnet_aci_aaep_to_l3outdomain_commands()
+"""
