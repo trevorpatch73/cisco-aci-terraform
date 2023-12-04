@@ -1,7 +1,0 @@
-APIC,infraNodeP_dn,infraNodeP_name,infraRsAccPortP_name,infraRsAccPortP_tDn,infraLeafS_name,infraLeafS_name,infraNodeBlk_from,infraNodeBlk_to
-https://sandboxapicdc.cisco.com,uni/infra/nprof-1105-1106_SWPROF,1105-1106_SWPROF,1106_INTPROF,uni/infra/accportprof-1105-1106_INTPROF,1105-1106_LFSEL,1105-1106_LFSEL,1105,1106
-https://sandboxapicdc.cisco.com,uni/infra/nprof-1107-1108_SWPROF,1107-1108_SWPROF,1108_INTPROF,uni/infra/accportprof-1107-1108_INTPROF,1107-1108_LFSEL,1107-1108_LFSEL,1107,1108
-https://sandboxapicdc.cisco.com,uni/infra/nprof-1106_SWPROF,1106_SWPROF,1106_INTPROF,uni/infra/accportprof-1106_INTPROF,1106_LFSEL,1106_LFSEL,1106,1106
-https://sandboxapicdc.cisco.com,uni/infra/nprof-1105_SWPROF,1105_SWPROF,1105_INTPROF,uni/infra/accportprof-1105_INTPROF,1105_LFSEL,1105_LFSEL,1105,1105
-https://sandboxapicdc.cisco.com,uni/infra/nprof-1108_SWPROF,1108_SWPROF,1108_INTPROF,uni/infra/accportprof-1108_INTPROF,1108_LFSEL,1108_LFSEL,1108,1108
-https://sandboxapicdc.cisco.com,uni/infra/nprof-1107_SWPROF,1107_SWPROF,1107_INTPROF,uni/infra/accportprof-1107_INTPROF,1107_LFSEL,1107_LFSEL,1107,1107
