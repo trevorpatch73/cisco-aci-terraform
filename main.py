@@ -1993,8 +1993,7 @@ def get_fabric_access_switch_profiles(token):
                                     nodeBlk = leaf_child["infraNodeBlk"]["attributes"]
                                     infraNodeBlk_from = nodeBlk["from_"]
                                     infraNodeBlk_to = nodeBlk["to_"]
-
-                    # Prepare row data
+                                    
                     row_as_list = [
                         ACI_BASE_URL,
                         infraNodeP_dn, infraNodeP_name,
@@ -2003,10 +2002,6 @@ def get_fabric_access_switch_profiles(token):
                         infraNodeBlk_from, infraNodeBlk_to
                     ]
 
-                    # Debugging: Print out the row data
-                    print("Row data:", row_as_list)
-
-                    # Check for missing data and fill with a placeholder if needed
                     row_as_list = [item if item is not None else 'N/A' for item in row_as_list]
 
                     if row_as_list not in existing_entries:
@@ -2109,7 +2104,6 @@ terraform import aci_leaf_profile.tf_{{ infraNodeP_name | replace('-', '_') }} {
 # FILES THAT NEED BUILT        
 terraform_import_file()
 terraform_command_file()
-"""
 fabric_inventory_file()
 fabric_blacklist_interfaces_file()
 access_policy_aaep_file()
@@ -2121,7 +2115,6 @@ interface_profile_file()
 leaf_access_port_policy_group_file()
 leaf_access_bundle_policy_group_file()
 l3_domain_file()
-"""
 fabric_access_leaf_interface_profiles_file()
 fabric_access_switch_profiles_file()
 
@@ -2129,7 +2122,6 @@ fabric_access_switch_profiles_file()
 token = get_aci_token()
 
 #API CALLS TO CSV FILES
-"""
 get_fabric_nodes(token)
 get_fabric_blacklist_interfaces(token)
 get_access_policy_aaep(token)
@@ -2139,17 +2131,15 @@ get_interface_profiles(token)
 get_leaf_access_port_policy_groups(token)
 get_leaf_access_bundle_policy_groups(token)
 get_l3_domain(token)
-get_aaep_to_l3outdomain(token)
-"""
 get_fabric_access_leaf_interface_profiles(token)
 get_fabric_access_switch_profiles(token)
 
-"""
 get_aaep_to_physdomain(token)
-"""
+get_aaep_to_l3outdomain(token)
+
 
 #TERRAFORM THINGS
-"""
+
 tf_ciscodevnet_aci_fabric_node_member()
 tf_ciscodevnet_aci_fabric_node_member_commands()
 tf_ciscodevnet_aci_interface_blacklist()
@@ -2168,14 +2158,12 @@ tf_ciscodevnet_aci_leaf_access_bundle_policy_group()
 tf_ciscodevnet_aci_leaf_access_bundle_policy_group_commands()
 tf_ciscodevnet_aci_l3_domain()
 tf_ciscodevnet_aci_l3_domain_commands()
-"""
 tf_ciscodevnet_aci_fabric_access_leaf_interface_profiles()
 tf_ciscodevnet_aci_fabric_access_leaf_interface_profiles_commands()
 tf_ciscodevnet_aci_fabric_access_switch_profiles()
 tf_ciscodevnet_aci_fabric_access_switch_profiles_commands()
-"""
+
 tf_ciscodevnet_aci_aaep_to_physdomain()
 tf_ciscodevnet_aci_aaep_to_physdomain_commands()
 tf_ciscodevnet_aci_aaep_to_l3outdomain()
 tf_ciscodevnet_aci_aaep_to_l3outdomain_commands()
-"""
