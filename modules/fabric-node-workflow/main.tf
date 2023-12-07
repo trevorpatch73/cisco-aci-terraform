@@ -98,6 +98,14 @@ EOF
   ]
 }
 
+resource "aci_vpc_domain_policy" "localAciVpcDomainPolicyIteration" {
+  for_each                          = local.UniqueVpcPeerGroupId
+
+  name                              = join("_", [each.key, "VDP"]) #INT
+  annotation                        = "ORCHESTRATOR:TERRAFORM"
+  dead_intvl                        = "200"                        #Default:200
+}
+
 resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupIteration" {
   for_each                          = local.UniqueVpcPeerGroupId
 
@@ -105,7 +113,7 @@ resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupI
   annotation                        = "ORCHESTRATOR:TERRAFORM"
   switch1                           = split("-", each.key)[0]
   switch2                           = split("-", each.key)[1]
-  vpc_domain_policy                 = "default"
+  vpc_domain_policy                 = aci_vpc_domain_policy.localAciVpcDomainPolicyIteration[each.key].name
   vpc_explicit_protection_group_id  = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
 }
 
