@@ -58,7 +58,7 @@ resource "aci_leaf_profile" "localAciFabricAccessLeafSwitchProfileIteration" {
     name                       = join("_", [each.value.SWITCH_NODE_ID, "LFSEL"])  #INT
     switch_association_type    = "range"
     node_block {
-      name                     = "blk1"
+      name                     = join("_", ["blk", each.value.SWITCH_NODE_ID])
       from_                    = each.value.SWITCH_NODE_ID
       to_                      = each.value.SWITCH_NODE_ID
     }
@@ -98,6 +98,24 @@ EOF
   ]
 }
 
+resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupIteration" {
+  for_each                          = local.UniqueVpcPeerGroupId
+
+  name                              = join("_", [each.key, "VEPG"]) #INT
+  annotation                        = "ORCHESTRATOR:TERRAFORM"
+  switch1                           = split("-", each.key)[0]
+  switch2                           = split("-", each.key)[1]
+  vpc_domain_policy                 = "default"
+  vpc_explicit_protection_group_id  = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
+}
+
+/*
+
+# THESE ITEMS ARE COMMENTED OUT DUE TO THE PREFERENCE OF A DESIGN ENABLING
+# VPCS TO ALLOCATE TWO DIFFERENT SWITCHPORTS/INTERFACE SELECTORS
+# ON TWO DIFFERENT SWITCHES; WHICH IS CONSTRAINTED BY THE COMBINED
+# METHODOLOGY THE CODE THAT FOLLOWS DEPLOYS AS BEST PRACTICE
+
 resource "aci_leaf_interface_profile" "localAciFabricAccessLeafVPCInterfaceProfileIteration" {
   for_each   = local.UniqueVpcPeerGroupId
 
@@ -124,13 +142,4 @@ resource "aci_leaf_profile" "localAciFabricAccessLeafVPCSwitchProfileIteration" 
   relation_infra_rs_acc_port_p = [aci_leaf_interface_profile.localAciFabricAccessLeafVPCInterfaceProfileIteration[each.key].id]
 }
 
-resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupIteration" {
-  for_each                          = local.UniqueVpcPeerGroupId
-
-  name                              = join("_", [each.key, "VEPG"]) #INT
-  annotation                        = "ORCHESTRATOR:TERRAFORM"
-  switch1                           = split("-", each.key)[0]
-  switch2                           = split("-", each.key)[1]
-  vpc_domain_policy                 = "default"
-  vpc_explicit_protection_group_id  = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
-}
+*/
