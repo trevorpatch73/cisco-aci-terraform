@@ -117,6 +117,25 @@ resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupI
   vpc_explicit_protection_group_id  = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
 }
 
+data "aci_node_mgmt_epg" "dataLocalAciNodeMgmtEpg" {
+  type = "out_of_band"
+  name  = "default"
+}
+
+resource "aci_static_node_mgmt_address" "localAciStaticNodeMgmtAddrIteration" {
+  for_each    = local.FilteredSwitchRoleAciFabricNodeMembers
+
+  management_epg_dn = data.aci_node_mgmt_epg.dataLocalAciNodeMgmtEpg.id
+  t_dn              = "topology/pod-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].pod_id}/node-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].node_id}" 
+  type              = "out_of_band"
+  description       = each.value.SNOW_RECORD #STRING
+  addr              = each.value.NODE_MGMT_ADDR
+  annotation        = "ORCHESTRATOR:TERRAFORM"
+  gw                = each.value.NODE_MGMT_GW
+}
+
+
+
 /*
 
 # THESE ITEMS ARE COMMENTED OUT DUE TO THE PREFERENCE OF A DESIGN ENABLING

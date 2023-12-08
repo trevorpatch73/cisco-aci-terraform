@@ -10,6 +10,8 @@ locals {
       SWITCH_POD_ID        = fabric_node_membership_iteration.SWITCH_POD_ID
       SWITCH_NODE_ID       = fabric_node_membership_iteration.SWITCH_NODE_ID
       VPC_PEER_GROUP       = fabric_node_membership_iteration.VPC_PEER_GROUP
+      NODE_MGMT_ADDR       = fabric_node_membership_iteration.NODE_MGMT_ADDR
+      NODE_MGMT_GW         = fabric_node_membership_iteration.NODE_MGMT_GW
       SNOW_RECORD          = fabric_node_membership_iteration.SNOW_RECORD
     }
   }
