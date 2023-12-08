@@ -4,13 +4,13 @@ resource "aci_fabric_node_member" "localAciFabricNodeMemberIteration" {
   name        = each.value.SWITCH_NAME          #STRING
   serial      = each.value.SWITCH_SERIAL_NUMBER #STRING
   annotation  = "ORCHESTRATOR:TERRAFORM"
-  description = each.value.SNOW_RECORD #STRING
+  description = each.value.SNOW_RECORD          #STRING
   ext_pool_id = "0"
   fabric_id   = "1"
-  node_id     = each.value.SWITCH_NODE_ID #INT
+  node_id     = each.value.SWITCH_NODE_ID       #INT
   node_type   = "unspecified"
-  pod_id      = each.value.SWITCH_POD_ID #INT
-  role        = each.value.SWITCH_ROLE   #STRING: leaf/spine
+  pod_id      = each.value.SWITCH_POD_ID        #INT
+  role        = each.value.SWITCH_ROLE          #STRING: leaf/spine
 }
 
 resource "aci_leaf_interface_profile" "localAciFabricAccessLeafInterfaceProfileIteration" {
@@ -117,24 +117,111 @@ resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupI
   vpc_explicit_protection_group_id  = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
 }
 
-data "aci_node_mgmt_epg" "dataLocalAciNodeMgmtEpg" {
-  type = "out_of_band"
-  name  = "default"
-}
-
 resource "aci_static_node_mgmt_address" "localAciStaticNodeMgmtAddrIteration" {
   for_each    = local.FilteredSwitchRoleAciFabricNodeMembers
 
-  management_epg_dn = data.aci_node_mgmt_epg.dataLocalAciNodeMgmtEpg.id
+  management_epg_dn = aci_node_mgmt_epg.localAciNodeMgmtOobEPG.id
   t_dn              = "topology/pod-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].pod_id}/node-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].node_id}" 
   type              = "out_of_band"
   description       = each.value.SNOW_RECORD #STRING
   addr              = each.value.NODE_MGMT_ADDR
   annotation        = "ORCHESTRATOR:TERRAFORM"
   gw                = each.value.NODE_MGMT_GW
+}  
+
+resource "aci_node_mgmt_epg" "localAciNodeMgmtOobEPG" {
+  type                    = "out_of_band"
+  management_profile_dn   = "uni/tn-mgmt/mgmtp-default"
+  description             = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Endpoint Group."
+  name                    = "TF_MGD_NODE_OOB_EPG"
+  annotation              = "ORCHESTRATOR:TERRAFORM"
+  relation_mgmt_rs_oo_b_prov = [aci_rest_managed.localAciNodeMgmtOobCtr.dn]
+}  
+  
+resource "aci_rest_managed" "localAciNodeMgmtOobCtr" {
+  dn          = "uni/tn-mgmt/oobbrc-TF_MGD_NODE_OOB_CTR"
+  class_name  = "vzOOBBrCP"
+  content = {
+    name  = "TF_MGD_NODE_OOB_CTR"
+    descr = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract."
+    #annotation = "ORCHESTRATOR:TERRAFORM" #commented this out because it greated noise - Trevor Patch
+    intent     = "install"
+    prio       = "unspecified"
+    scope      = "context"
+    targetDscp = "unspecified"
+  }
 }
 
+resource "aci_contract_subject" "localAciNodeMgmtOobCtrSubj" {
+  contract_dn   = aci_rest_managed.localAciNodeMgmtOobCtr.id
+  description   = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract Subject."
+  name          = "TF_MGD_NODE_OOB_CTR_SUBJ"
+  annotation    = "ORCHESTRATOR:TERRAFORM"
+  rev_flt_ports = "yes"
+}
 
+data "aci_tenant" "dataLocalAciTenantMgmt" {
+  name = "mgmt"
+}
+
+resource "aci_filter" "localAciNodeMgmtOobCtrSubjFilt" {
+  tenant_dn   = data.aci_tenant.dataLocalAciTenantMgmt.id
+  description = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract Subject Filter."
+  name        = "TF_MGD_NODE_OOB_CTR_SUBJ_FILT"
+  annotation  = "ORCHESTRATOR:TERRAFORM"
+}
+
+resource "aci_contract_subject_filter" "localAciNodeMgmtOobCtrSubjFiltAssoc" {
+  contract_subject_dn = aci_contract_subject.localAciNodeMgmtOobCtrSubj.id
+  filter_dn           = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
+  action              = "permit"
+  directives          = ["log"]
+  priority_override   = "default"
+}
+
+resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltAllowArpReq" {
+  # Allows ARP REQUESTS INTO MANAGEMENT INTERFACES
+
+  name        = "allow-arp-request"
+  filter_dn   = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
+  arp_opc     = "req"
+  ether_t     = "arp"
+  description = "Allows ARP Requests to/from the Terraform Managed Node Out-Of-Band Management Interface."
+}
+
+resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltAllowArpReply" {
+  # Allows ARP REPLIES INTO MANAGEMENT INTERFACES
+
+  name        = "allow-arp-reply"
+  filter_dn   = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
+  arp_opc     = "reply"
+  ether_t     = "arp"
+  description = "Allows ARP Replies to/from the Terraform Managed Node Out-Of-Band Management Interface."
+}
+
+resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolTcpUdpIteration" {
+  for_each    = local.FilteredProtocolTcpUdp
+
+  name        = each.value.RULE_NAME
+  filter_dn   = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
+  ether_t     = "ipv4"
+  stateful    = "yes"
+  prot        = each.value.PROTOCOL
+  d_from_port = each.value.PORT
+  d_to_port   = each.value.PORT
+  description = "${each.value.SNOW_RECORD} - Allows ${each.value.PROTOCOL}_${each.value.PORT} to/from the Terraform Managed Node Out-Of-Band Management Interface."
+}
+
+resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolIcmpIteration" {
+  for_each    = local.FilteredProtocolIcmp
+
+  name        = each.value.RULE_NAME
+  filter_dn   = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
+  ether_t     = "ipv4"
+  stateful    = "yes"
+  prot        = each.value.PROTOCOL
+  description = "${each.value.SNOW_RECORD} - Allows ${each.value.PROTOCOL} to/from the Terraform Managed Node Out-Of-Band Management Interface."
+}
 
 /*
 

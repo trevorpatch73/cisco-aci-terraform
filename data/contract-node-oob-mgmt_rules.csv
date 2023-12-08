@@ -1,0 +1,5 @@
+SNOW_RECORD,RULE_NAME,PROTOCOL,PORT
+CHG123,allow-icmp,icmp,null
+CHG456,allow-ssh,tcp,22
+CHG789,allow-snmp,udp,161
+CHG789,allow-syslog,udp,514

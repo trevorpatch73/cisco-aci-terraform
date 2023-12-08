@@ -39,5 +39,26 @@ locals {
     if value.ACI_REST_TRIGGER == "true"
   }
 
+
+  contract_node_oob_mgmt_rule_iterations = csvdecode(file("./data/contract-node-oob-mgmt_rules.csv"))
  
+  AciNodeOobMgmtRules = {
+    for contract_node_oob_mgmt_rule_iteration in local.contract_node_oob_mgmt_rule_iterations : contract_node_oob_mgmt_rule_iteration.RULE_NAME => {
+      SNOW_RECORD          = contract_node_oob_mgmt_rule_iteration.SNOW_RECORD
+      RULE_NAME            = contract_node_oob_mgmt_rule_iteration.RULE_NAME
+      PROTOCOL             = lower(contract_node_oob_mgmt_rule_iteration.PROTOCOL)
+      PORT                 = contract_node_oob_mgmt_rule_iteration.PORT
+    }
+  }
+  
+  FilteredProtocolTcpUdp = {
+    for key, value in local.AciNodeOobMgmtRules : key => value
+    if value.PROTOCOL == "tcp" || value.PROTOCOL == "udp"
+  }
+  
+  FilteredProtocolIcmp = {
+    for key, value in local.AciNodeOobMgmtRules : key => value
+    if value.PROTOCOL == "icmp"
+  }  
+
 }
