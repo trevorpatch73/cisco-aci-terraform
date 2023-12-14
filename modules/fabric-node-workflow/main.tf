@@ -1,20 +1,20 @@
 resource "aci_fabric_node_member" "localAciFabricNodeMemberIteration" {
-  for_each    = local.FilteredSwitchRoleAciFabricNodeMembers
+  for_each = local.FilteredSwitchRoleAciFabricNodeMembers
 
   name        = each.value.SWITCH_NAME          #STRING
   serial      = each.value.SWITCH_SERIAL_NUMBER #STRING
   annotation  = "ORCHESTRATOR:TERRAFORM"
-  description = each.value.SNOW_RECORD          #STRING
+  description = each.value.SNOW_RECORD #STRING
   ext_pool_id = "0"
   fabric_id   = "1"
-  node_id     = each.value.SWITCH_NODE_ID       #INT
+  node_id     = each.value.SWITCH_NODE_ID #INT
   node_type   = "unspecified"
-  pod_id      = each.value.SWITCH_POD_ID        #INT
-  role        = each.value.SWITCH_ROLE          #STRING: leaf/spine
+  pod_id      = each.value.SWITCH_POD_ID #INT
+  role        = each.value.SWITCH_ROLE   #STRING: leaf/spine
 }
 
 resource "aci_leaf_interface_profile" "localAciFabricAccessLeafInterfaceProfileIteration" {
-  for_each    = local.FilteredLeafRoleAciFabricNodeMembers
+  for_each = local.FilteredLeafRoleAciFabricNodeMembers
 
   name        = join("_", [each.value.SWITCH_NODE_ID, "INTPROF"]) #INT
   description = each.value.SNOW_RECORD                            #STRING
@@ -22,7 +22,7 @@ resource "aci_leaf_interface_profile" "localAciFabricAccessLeafInterfaceProfileI
 }
 
 resource "aci_access_switch_policy_group" "localAciFabricAccessLeafSwitchPolicyGroupIteration" {
-  for_each    = local.FilteredLeafRoleAciFabricNodeMembers
+  for_each = local.FilteredLeafRoleAciFabricNodeMembers
 
   name        = join("_", [each.value.SWITCH_NODE_ID, "SWPOLGRP"]) #INT
   description = each.value.SNOW_RECORD                             #STRING
@@ -48,19 +48,19 @@ resource "aci_access_switch_policy_group" "localAciFabricAccessLeafSwitchPolicyG
 }
 
 resource "aci_leaf_profile" "localAciFabricAccessLeafSwitchProfileIteration" {
-  for_each    = local.FilteredLeafRoleAciFabricNodeMembers
+  for_each = local.FilteredLeafRoleAciFabricNodeMembers
 
-  name                         = join("_", [each.value.SWITCH_NODE_ID, "SWPROF"]) #INT
-  description                  = each.value.SNOW_RECORD                           #STRING
-  annotation                   = "ORCHESTRATOR:TERRAFORM"
+  name        = join("_", [each.value.SWITCH_NODE_ID, "SWPROF"]) #INT
+  description = each.value.SNOW_RECORD                           #STRING
+  annotation  = "ORCHESTRATOR:TERRAFORM"
 
   leaf_selector {
-    name                       = join("_", [each.value.SWITCH_NODE_ID, "LFSEL"])  #INT
-    switch_association_type    = "range"
+    name                    = join("_", [each.value.SWITCH_NODE_ID, "LFSEL"]) #INT
+    switch_association_type = "range"
     node_block {
-      name                     = join("_", ["blk", each.value.SWITCH_NODE_ID])
-      from_                    = each.value.SWITCH_NODE_ID
-      to_                      = each.value.SWITCH_NODE_ID
+      name  = join("_", ["blk", each.value.SWITCH_NODE_ID])
+      from_ = each.value.SWITCH_NODE_ID
+      to_   = each.value.SWITCH_NODE_ID
     }
   }
 
@@ -99,48 +99,48 @@ EOF
 }
 
 resource "aci_vpc_domain_policy" "localAciVpcDomainPolicyIteration" {
-  for_each                          = local.UniqueVpcPeerGroupId
+  for_each = local.UniqueVpcPeerGroupId
 
-  name                              = join("_", [each.key, "VDP"]) #INT
-  annotation                        = "ORCHESTRATOR:TERRAFORM"
-  dead_intvl                        = "200"                        #Default:200
+  name       = join("_", [each.key, "VDP"]) #INT
+  annotation = "ORCHESTRATOR:TERRAFORM"
+  dead_intvl = "200" #Default:200
 }
 
 resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupIteration" {
-  for_each                          = local.UniqueVpcPeerGroupId
+  for_each = local.UniqueVpcPeerGroupId
 
-  name                              = join("_", [each.key, "VEPG"]) #INT
-  annotation                        = "ORCHESTRATOR:TERRAFORM"
-  switch1                           = split("-", each.key)[0]
-  switch2                           = split("-", each.key)[1]
-  vpc_domain_policy                 = aci_vpc_domain_policy.localAciVpcDomainPolicyIteration[each.key].name
-  vpc_explicit_protection_group_id  = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
+  name                             = join("_", [each.key, "VEPG"]) #INT
+  annotation                       = "ORCHESTRATOR:TERRAFORM"
+  switch1                          = split("-", each.key)[0]
+  switch2                          = split("-", each.key)[1]
+  vpc_domain_policy                = aci_vpc_domain_policy.localAciVpcDomainPolicyIteration[each.key].name
+  vpc_explicit_protection_group_id = tostring(local.IndexConvertUniqueVpcPeerGroupId[each.key])
 }
 
 resource "aci_static_node_mgmt_address" "localAciStaticNodeMgmtAddrIteration" {
-  for_each    = local.FilteredSwitchRoleAciFabricNodeMembers
+  for_each = local.FilteredSwitchRoleAciFabricNodeMembers
 
   management_epg_dn = aci_node_mgmt_epg.localAciNodeMgmtOobEPG.id
-  t_dn              = "topology/pod-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].pod_id}/node-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].node_id}" 
+  t_dn              = "topology/pod-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].pod_id}/node-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].node_id}"
   type              = "out_of_band"
   description       = each.value.SNOW_RECORD #STRING
   addr              = each.value.NODE_MGMT_ADDR
   annotation        = "ORCHESTRATOR:TERRAFORM"
   gw                = each.value.NODE_MGMT_GW
-}  
+}
 
 resource "aci_node_mgmt_epg" "localAciNodeMgmtOobEPG" {
-  type                    = "out_of_band"
-  management_profile_dn   = "uni/tn-mgmt/mgmtp-default"
-  description             = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Endpoint Group."
-  name                    = "TF_MGD_NODE_OOB_EPG"
-  annotation              = "ORCHESTRATOR:TERRAFORM"
+  type                       = "out_of_band"
+  management_profile_dn      = "uni/tn-mgmt/mgmtp-default"
+  description                = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Endpoint Group."
+  name                       = "TF_MGD_NODE_OOB_EPG"
+  annotation                 = "ORCHESTRATOR:TERRAFORM"
   relation_mgmt_rs_oo_b_prov = [aci_rest_managed.localAciNodeMgmtOobCtr.dn]
-}  
-  
+}
+
 resource "aci_rest_managed" "localAciNodeMgmtOobCtr" {
-  dn          = "uni/tn-mgmt/oobbrc-TF_MGD_NODE_OOB_CTR"
-  class_name  = "vzOOBBrCP"
+  dn         = "uni/tn-mgmt/oobbrc-TF_MGD_NODE_OOB_CTR"
+  class_name = "vzOOBBrCP"
   content = {
     name  = "TF_MGD_NODE_OOB_CTR"
     descr = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract."
@@ -200,7 +200,7 @@ resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltAllowArpReply" {
 }
 
 resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolTcpUdpIteration" {
-  for_each    = local.FilteredProtocolTcpUdp
+  for_each = local.FilteredProtocolTcpUdp
 
   name        = each.value.RULE_NAME
   filter_dn   = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
@@ -213,7 +213,7 @@ resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolTcpUdpIterati
 }
 
 resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolIcmpIteration" {
-  for_each    = local.FilteredProtocolIcmp
+  for_each = local.FilteredProtocolIcmp
 
   name        = each.value.RULE_NAME
   filter_dn   = aci_filter.localAciNodeMgmtOobCtrSubjFilt.id
@@ -221,6 +221,329 @@ resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolIcmpIteration
   stateful    = "yes"
   prot        = each.value.PROTOCOL
   description = "${each.value.SNOW_RECORD} - Allows ${each.value.PROTOCOL} to/from the Terraform Managed Node Out-Of-Band Management Interface."
+}
+
+data "aci_rest" "HttpGetNodeFirmwareVersionIteration" {
+  for_each = local.FilteredSwitchRoleAciFabricNodeMembers
+
+  path = "/api/node/class/firmwareRunning.json?query-target-filter=eq(firmwareRunning.dn, \"topology/pod-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].pod_id}/node-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].node_id}/sys/fwstatuscont/running\")"
+
+  depends_on = [
+    aci_fabric_node_member.localAciFabricNodeMemberIteration
+  ]
+}
+
+resource "null_resource" "localAciOddSpineNodeStageFirmware" {
+  for_each = local.FilteredOddSpines
+
+  provisioner "local-exec" {
+    command = "python ./scripts/fabric-isolated-node-firmware.py"
+
+    environment = {
+      SWITCH_POD_ID  = each.value.SWITCH_POD_ID
+      SWITCH_NODE_ID = each.value.SWITCH_NODE_ID
+      TARGET_VERISON = var.ODD_SPINE_VERSION
+    }
+  }
+
+  depends_on = [
+    data.aci_rest.HttpGetNodeFirmwareVersionIteration
+  ]
+}
+
+resource "null_resource" "localAciEvenSpineNodeStageFirmware" {
+  for_each = local.FilteredEvenSpines
+
+  provisioner "local-exec" {
+    command = "python ./scripts/fabric-isolated-node-firmware.py"
+
+    environment = {
+      SWITCH_POD_ID  = each.value.SWITCH_POD_ID
+      SWITCH_NODE_ID = each.value.SWITCH_NODE_ID
+      TARGET_VERISON = var.EVEN_SPINE_VERSION
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciOddSpineNodeStageFirmware
+  ]
+}
+
+resource "null_resource" "localAciOddLeafNodeStageFirmware" {
+  for_each = local.FilteredOddLeafs
+
+  provisioner "local-exec" {
+    command = "python ./scripts/fabric-isolated-node-firmware.py"
+
+    environment = {
+      SWITCH_POD_ID  = each.value.SWITCH_POD_ID
+      SWITCH_NODE_ID = each.value.SWITCH_NODE_ID
+      TARGET_VERISON = var.ODD_LEAF_VERSION
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciEvenSpineNodeStageFirmware
+  ]
+}
+
+resource "null_resource" "localAciEvenLeafNodeStageFirmware" {
+  for_each = local.FilteredEvenLeafs
+
+  provisioner "local-exec" {
+    command = "python ./scripts/fabric-isolated-node-firmware.py"
+
+    environment = {
+      SWITCH_POD_ID  = each.value.SWITCH_POD_ID
+      SWITCH_NODE_ID = each.value.SWITCH_NODE_ID
+      TARGET_VERISON = var.EVEN_LEAF_VERSION
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciOddLeafNodeStageFirmware
+  ]
+}
+
+resource "aci_rest_managed" "localACIOddSpinestrigSchedP" {
+  dn         = "uni/fabric/schedp-ODD_SPN_SCHD"
+  class_name = "trigSchedP"
+  content = {
+    name   = "ODD_SPN_SCHD"
+    status = "created,modified"
+  }
+
+  child {
+    rn         = "abswinp-ODD_SPN_TRIG"
+    class_name = "trigAbsWindowP"
+    content = {
+      name   = "ODD_SPN_TRIG"
+      date   = timestamp() # UTC timestamp.
+      status = "created,modified"
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciOddSpineNodeStageFirmware
+  ]
+}
+
+resource "aci_maintenance_policy" "localACIOddSpinesmaintMaintP" {
+  name                   = "ODD_SPINES_MNTPOL"
+  admin_st               = "triggered"
+  description            = "This Maintenance Policy Defines the Firmware/Software Version for Odd Numbered Spines"
+  annotation             = "ORCHESTRATOR:TERRAFORM"
+  graceful               = "yes"
+  ignore_compat          = "yes"
+  notif_cond             = "notifyNever"
+  run_mode               = "pauseNever"
+  version                = var.ODD_SPINE_VERSION
+  version_check_override = "untriggered"
+
+  relation_maint_rs_pol_scheduler = aci_rest_managed.localACIOddSpinestrigSchedP.dn
+}
+
+resource "aci_pod_maintenance_group" "localACIOddSpinesmaintMaintGrp" {
+  name                       = "ODD_SPINES_MNTGRP"
+  description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIOddSpinesmaintMaintP.name}."
+  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  fwtype                     = "switch"
+  pod_maintenance_group_type = "range"
+
+  relation_maint_rs_mgrpp = aci_maintenance_policy.localACIOddSpinesmaintMaintP.id
+}
+
+resource "aci_maintenance_group_node" "localACIOddSpinesmaintMaintGrpNodeBlkIteration" {
+  for_each = local.FilteredOddSpines
+
+  name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
+  description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIOddSpinesmaintMaintGrp.name}."
+  annotation  = "ORCHESTRATOR:TERRAFORM"
+  from_       = each.value.SWITCH_NODE_ID
+  to_         = each.value.SWITCH_NODE_ID
+
+  pod_maintenance_group_dn = aci_pod_maintenance_group.localACIOddSpinesmaintMaintGrp.id
+}
+
+resource "aci_rest_managed" "localACIEvenSpinestrigSchedP" {
+  dn         = "uni/fabric/schedp-EVEN_SPN_SCHD"
+  class_name = "trigSchedP"
+  content = {
+    name   = "EVEN_SPN_SCHD"
+    status = "created,modified"
+  }
+
+  child {
+    rn         = "abswinp-EVEN_SPN_TRIG"
+    class_name = "trigAbsWindowP"
+    content = {
+      name   = "EVEN_SPN_TRIG"
+      date   = timestamp() # UTC timestamp.
+      status = "created,modified"
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciEvenSpineNodeStageFirmware
+  ]
+}
+
+resource "aci_maintenance_policy" "localACIEvenSpinesmaintMaintP" {
+  name                   = "EVEN_SPINES_MNTPOL"
+  admin_st               = "triggered"
+  description            = "This Maintenance Policy Defines the Firmware/Software Version for Even Numbered Spines"
+  annotation             = "ORCHESTRATOR:TERRAFORM"
+  graceful               = "yes"
+  ignore_compat          = "yes"
+  notif_cond             = "notifyNever"
+  run_mode               = "pauseNever"
+  version                = var.EVEN_SPINE_VERSION
+  version_check_override = "untriggered"
+
+  relation_maint_rs_pol_scheduler = aci_rest_managed.localACIEvenSpinestrigSchedP.dn
+}
+
+resource "aci_pod_maintenance_group" "localACIEvenSpinesmaintMaintGrp" {
+  name                       = "EVEN_SPINES_MNTGRP"
+  description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIEvenSpinesmaintMaintP.name}."
+  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  fwtype                     = "switch"
+  pod_maintenance_group_type = "range"
+
+  relation_maint_rs_mgrpp = aci_maintenance_policy.localACIEvenSpinesmaintMaintP.id
+}
+
+resource "aci_maintenance_group_node" "localACIEvenSpinesmaintMaintGrpNodeBlkIteration" {
+  for_each = local.FilteredEvenSpines
+
+  name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
+  description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIEvenSpinesmaintMaintGrp.name}."
+  annotation  = "ORCHESTRATOR:TERRAFORM"
+  from_       = each.value.SWITCH_NODE_ID
+  to_         = each.value.SWITCH_NODE_ID
+
+  pod_maintenance_group_dn = aci_pod_maintenance_group.localACIEvenSpinesmaintMaintGrp.id
+}
+
+
+resource "aci_rest_managed" "localACIOddLeaftrigSchedP" {
+  dn         = "uni/fabric/schedp-ODD_LF_SCHD"
+  class_name = "trigSchedP"
+  content = {
+    name   = "ODD_LF_SCHD"
+    status = "created,modified"
+  }
+
+  child {
+    rn         = "abswinp-ODD_LF_TRIG"
+    class_name = "trigAbsWindowP"
+    content = {
+      name   = "ODD_LF_TRIG"
+      date   = timestamp() # UTC timestamp.
+      status = "created,modified"
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciOddLeafNodeStageFirmware
+  ]
+}
+
+resource "aci_maintenance_policy" "localACIOddLeafmaintMaintP" {
+  name                   = "ODD_Leaf_MNTPOL"
+  admin_st               = "triggered"
+  description            = "This Maintenance Policy Defines the Firmware/Software Version for Odd Numbered Leaf"
+  annotation             = "ORCHESTRATOR:TERRAFORM"
+  graceful               = "yes"
+  ignore_compat          = "yes"
+  notif_cond             = "notifyNever"
+  run_mode               = "pauseNever"
+  version                = var.ODD_LEAF_VERSION
+  version_check_override = "untriggered"
+
+  relation_maint_rs_pol_scheduler = aci_rest_managed.localACIOddLeaftrigSchedP.dn
+}
+
+resource "aci_pod_maintenance_group" "localACIOddLeafmaintMaintGrp" {
+  name                       = "ODD_Leaf_MNTGRP"
+  description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIOddLeafmaintMaintP.name}."
+  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  fwtype                     = "switch"
+  pod_maintenance_group_type = "range"
+
+  relation_maint_rs_mgrpp = aci_maintenance_policy.localACIOddLeafmaintMaintP.id
+}
+
+resource "aci_maintenance_group_node" "localACIOddLeafmaintMaintGrpNodeBlkIteration" {
+  for_each = local.FilteredOddLeafs
+
+  name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
+  description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIOddLeafmaintMaintGrp.name}."
+  annotation  = "ORCHESTRATOR:TERRAFORM"
+  from_       = each.value.SWITCH_NODE_ID
+  to_         = each.value.SWITCH_NODE_ID
+
+  pod_maintenance_group_dn = aci_pod_maintenance_group.localACIOddLeafmaintMaintGrp.id
+}
+
+resource "aci_rest_managed" "localACIEvenLeaftrigSchedP" {
+  dn         = "uni/fabric/schedp-EVEN_LF_SCHD"
+  class_name = "trigSchedP"
+  content = {
+    name   = "EVEN_LF_SCHD"
+    status = "created,modified"
+  }
+
+  child {
+    rn         = "abswinp-EVEN_LF_TRIG"
+    class_name = "trigAbsWindowP"
+    content = {
+      name   = "EVEN_LF_TRIG"
+      date   = timestamp() # UTC timestamp.
+      status = "created,modified"
+    }
+  }
+
+  depends_on = [
+    null_resource.localAciEvenLeafNodeStageFirmware
+  ]
+}
+
+resource "aci_maintenance_policy" "localACIEvenLeafmaintMaintP" {
+  name                   = "EVEN_Leaf_MNTPOL"
+  admin_st               = "triggered"
+  description            = "This Maintenance Policy Defines the Firmware/Software Version for Even Numbered Leaf"
+  annotation             = "ORCHESTRATOR:TERRAFORM"
+  graceful               = "yes"
+  ignore_compat          = "yes"
+  notif_cond             = "notifyNever"
+  run_mode               = "pauseNever"
+  version                = var.EVEN_LEAF_VERSION
+  version_check_override = "untriggered"
+
+  relation_maint_rs_pol_scheduler = aci_rest_managed.localACIEvenLeaftrigSchedP.dn
+}
+
+resource "aci_pod_maintenance_group" "localACIEvenLeafmaintMaintGrp" {
+  name                       = "EVEN_Leaf_MNTGRP"
+  description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIEvenLeafmaintMaintP.name}."
+  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  fwtype                     = "switch"
+  pod_maintenance_group_type = "range"
+
+  relation_maint_rs_mgrpp = aci_maintenance_policy.localACIEvenLeafmaintMaintP.id
+}
+
+resource "aci_maintenance_group_node" "localACIEvenLeafmaintMaintGrpNodeBlkIteration" {
+  for_each = local.FilteredEvenLeafs
+
+  name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
+  description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIEvenLeafmaintMaintGrp.name}."
+  annotation  = "ORCHESTRATOR:TERRAFORM"
+  from_       = each.value.SWITCH_NODE_ID
+  to_         = each.value.SWITCH_NODE_ID
+
+  pod_maintenance_group_dn = aci_pod_maintenance_group.localACIEvenLeafmaintMaintGrp.id
 }
 
 /*
