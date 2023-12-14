@@ -223,16 +223,6 @@ resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolIcmpIteration
   description = "${each.value.SNOW_RECORD} - Allows ${each.value.PROTOCOL} to/from the Terraform Managed Node Out-Of-Band Management Interface."
 }
 
-data "aci_rest" "HttpGetNodeFirmwareVersionIteration" {
-  for_each = local.FilteredSwitchRoleAciFabricNodeMembers
-
-  path = "/api/node/class/firmwareRunning.json?query-target-filter=eq(firmwareRunning.dn, \"topology/pod-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].pod_id}/node-${aci_fabric_node_member.localAciFabricNodeMemberIteration[each.key].node_id}/sys/fwstatuscont/running\")"
-
-  depends_on = [
-    aci_fabric_node_member.localAciFabricNodeMemberIteration
-  ]
-}
-
 resource "null_resource" "localAciOddSpineNodeStageFirmware" {
   for_each = local.FilteredOddSpines
 
