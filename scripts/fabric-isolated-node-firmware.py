@@ -3,6 +3,7 @@ import json
 import os
 import datetime
 import time
+import sys
 
 requests.packages.urllib3.disable_warnings()
 current_utc_datetime = datetime.datetime.utcnow()
@@ -151,14 +152,55 @@ def http_post(token):
         headers["Cookie"] = f"APIC-Cookie={token}"
         response = requests.post(URL, headers=headers, data=payload, verify=False)
     else:
-        print(f"Received a HTTP_200, Maintenance Upgrade Job for Node-{SWITCH_NODE_ID} triggered")
-        print(response.content)
-        print(f"TERRAFORM PROCEED ON NODE-{SWITCH_NODE_ID}")
-
-def get_maintenance_upgrade_job(token):
-    while True:
+        if STATUS == "created,modified":
+          print(f"Received a HTTP_200, Maintenance Upgrade Job for Node-{SWITCH_NODE_ID} triggered")
+          print(response.content)
+        if STATUS == "deleted":
+          print(f"Received a HTTP_200, Ad-Hoc Maintenance Group for Node-{SWITCH_NODE_ID} is being deleted")
+          print(response.content)        
         
-        URL = f'{ACI_BASE_URL}/api/node/class/maintUpgJob.json?=query-target-filter=eq(maintUpgJob.dn, \"topology/pod-{SWITCH_POD_ID}/node-{SWITCH_NODE_ID}/sys/fwstatuscont/upgjob\")'
+def get_maintenance_upgrade_job(token):
+  retry_counter = 0
+  
+  while True:
+      
+      URL = f'{ACI_BASE_URL}/api/node/class/maintUpgJob.json?=query-target-filter=eq(maintUpgJob.dn, \"topology/pod-{SWITCH_POD_ID}/node-{SWITCH_NODE_ID}/sys/fwstatuscont/upgjob\")'
+      
+      headers = {
+          "Cookie": f"APIC-Cookie={token}",
+          "Content-Type": "application/json"
+      }
+      
+      response = requests.get(URL, headers=headers, verify=False)
+      
+      if response.status_code == 403:
+          print("Received a 403 error. Refreshing token...")
+          token = get_aci_token()
+          headers["Cookie"] = f"APIC-Cookie={token}"
+          response = requests.get(URL, headers=headers, verify=False)
+      else:
+          data = response.json()
+          upgradeStatus = data["imdata"][0]["maintUpgJob"]["attributes"]["upgradeStatus"]
+          print(f"{SWITCH_NODE_ID} upgrade status is: {upgradeStatus}")
+          
+          if upgradeStatus == "completeok":
+              print(f"Starting process to remove staging maintenance group for Node-{SWITCH_NODE_ID}.")
+              break
+          else:
+              print(f"Node-{SWITCH_NODE_ID} is not completeok, sleeping 10 seconds...")
+              time.sleep(10)
+              retry_counter += 1
+              if retry_counter == 180:
+                sys.exit(f"Maximum WAIT_TIME execeed....exiting")
+              else:
+                total_time = retry_counter * 10
+                print(f"{total_time} seconds in queue.")
+                
+              
+def get_current_version(token):
+      while True:
+        
+        URL = f'{ACI_BASE_URL}/api/node/class/firmwareRunning.json?query-target-filter=eq(firmwareRunning.dn, \"topology/pod-{SWITCH_POD_ID}/node-{SWITCH_NODE_ID}/sys/fwstatuscont/running\")'
         
         headers = {
             "Cookie": f"APIC-Cookie={token}",
@@ -174,26 +216,47 @@ def get_maintenance_upgrade_job(token):
             response = requests.get(URL, headers=headers, verify=False)
         else:
             data = response.json()
-            upgradeStatus = data["imdata"][0]["maintUpgJob"]["attributes"]["upgradeStatus"]
-            print(f"{SWITCH_NODE_ID} upgrade status is: {upgradeStatus}")
+            totalCount = data["totalCount"]
             
-            if upgradeStatus == "completeok":
-                print(f"Starting process to remove staging maintenance group for Node-{SWITCH_NODE_ID}.")
-                break
+            if totalCount == 1:
+              CURRENT_VERSION = data["imdata"][0]["firmwareRunning"]["attributes"]["version"]
+              print(f"{SWITCH_NODE_ID} version is: {CURRENT_VERSION}")
+              return CURRENT_VERSION
             else:
-                print(f"Node-{SWITCH_NODE_ID} is not completeok, sleeping 10 seconds...")
-                time.sleep(10)
-                
+              print(f"An error has occured for {SWITCH_NODE_ID}:")
+              print (response.status_code)
+              print (response.content)
+
+              
 # Get a token            
 token = get_aci_token()
 
-# Set Up Ad-Hoc Staging Group for Node
-STATUS = "created, modified"
-http_post(token)
+# Get the current verison
+CURRENT_VERSION = get_current_version(token)
 
-# Wait for it to upgrade/downgrade to verison
-get_maintenance_upgrade_job(token)
+if CURRENT_VERSION == TARGET_VERISON:
+  print(f"Node-{SWITCH_NODE_ID} is operating with the intended firmware verison of {TARGET_VERISON}.")
+  print(f"TERRAFORM PROCEED ON NODE-{SWITCH_NODE_ID}")
+else:
+  print(f"Node-{SWITCH_NODE_ID} is operating with {CURRENT_VERSION}, and is intended to run {TARGET_VERISON}")
+  print(f"Starting Ad-Hoc Staging Maintenance Process to Upgrade/Downgrade Node-{SWITCH_NODE_ID} in Isolation")
+  
+  # Set Up Ad-Hoc Staging Group for Node
+  STATUS = "created,modified"
+  http_post(token)
 
-# Remove Ad-Hoc Staging Group for Node
-STATUS = "deleted"
-http_post(token)
+  # Wait for it to upgrade/downgrade to verison
+  get_maintenance_upgrade_job(token)
+
+  # Remove Ad-Hoc Staging Group for Node
+  STATUS = "deleted"
+  http_post(token)
+  
+  # Check Version Again
+  CURRENT_VERSION = get_current_version(token)
+  if CURRENT_VERSION == TARGET_VERISON:
+    print(f"Node-{SWITCH_NODE_ID} is operating with the intended firmware verison of {TARGET_VERISON}.")
+    print(f"TERRAFORM PROCEED ON NODE-{SWITCH_NODE_ID}")
+  else:
+    print(f"Node-{SWITCH_NODE_ID} is operating with firmware version {CURRENT_VERSION}, and failed the staging process...")
+    sys.exit(f"Please contact human to investigate....exiting")
