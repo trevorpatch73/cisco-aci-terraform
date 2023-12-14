@@ -237,7 +237,7 @@ resource "null_resource" "localAciOddSpineNodeStageFirmware" {
   }
 
   depends_on = [
-    data.aci_rest.HttpGetNodeFirmwareVersionIteration
+    aci_fabric_node_member.localAciFabricNodeMemberIteration
   ]
 }
 
@@ -255,7 +255,7 @@ resource "null_resource" "localAciEvenSpineNodeStageFirmware" {
   }
 
   depends_on = [
-    null_resource.localAciOddSpineNodeStageFirmware
+    aci_fabric_node_member.localAciFabricNodeMemberIteration
   ]
 }
 
@@ -273,7 +273,7 @@ resource "null_resource" "localAciOddLeafNodeStageFirmware" {
   }
 
   depends_on = [
-    null_resource.localAciEvenSpineNodeStageFirmware
+    aci_fabric_node_member.localAciFabricNodeMemberIteration
   ]
 }
 
@@ -291,7 +291,7 @@ resource "null_resource" "localAciEvenLeafNodeStageFirmware" {
   }
 
   depends_on = [
-    null_resource.localAciOddLeafNodeStageFirmware
+    aci_fabric_node_member.localAciFabricNodeMemberIteration
   ]
 }
 
@@ -314,7 +314,7 @@ resource "aci_rest_managed" "localACIOddSpinestrigSchedP" {
   }
 
   depends_on = [
-    null_resource.localAciOddSpineNodeStageFirmware
+    aci_fabric_node_member.localAciFabricNodeMemberIteration
   ]
 }
 
