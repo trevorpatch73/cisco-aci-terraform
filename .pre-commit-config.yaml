@@ -1,0 +1,12 @@
+repos:
+- repo: https://github.com/antonbabenko/pre-commit-terraform
+  rev: v1.86.0
+  hooks:
+  - id: terraform_docs
+    args:
+      - --hook-config=--path-to-file=README.md
+      - --hook-config=--add-to-existing-file=true
+      - --hook-config=--create-file-if-not-exist=true
+      - --hook-config=--use-standard-markers=true
+    files: \.tf$   # Run only on .tf files
+    exclude: \.c9/metadata/  # Exclude Cloud9 metadata files
