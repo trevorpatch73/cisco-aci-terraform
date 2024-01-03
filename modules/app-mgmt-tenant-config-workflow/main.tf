@@ -54,15 +54,105 @@ resource "aci_application_profile" "localAciTenantApplicationProfileIteration" {
 resource "aci_bridge_domain" "localAciTenantBridgeDomainIteration" {
     for_each = local.network_centric_epgs_bds_list
     
-    tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
-    name        = join("_",["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "BD"])
-    annotation  = "ORCHESTRATOR:TERRAFORM"
-    description = join (" ",[each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "bridge domain was created as a NCI Mode VLAN for a segmentation zone via Terraform from a CI/CD Pipeline."])
+    tenant_dn           = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
+    name                = join("_",["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "BD"])
+    annotation          = "ORCHESTRATOR:TERRAFORM"
+    description         = join (" ",[each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "bridge domain was created as a NCI Mode VLAN for a segmentation zone via Terraform from a CI/CD Pipeline."])
+
+    optimize_wan_bandwidth      = "no"
+    arp_flood                   = each.value.BD_FLOOD == "true" ? "yes" : "no"
+    ep_clear                    = "no"
+    ep_move_detect_mode         = "garp"
+    host_based_routing          = "no" # ISN via Nexus Dashboard MSO Not Used
+    intersite_bum_traffic_allow = "no" # ISN via Nexus Dashboard MSO Not Used
+    intersite_l2_stretch        = "no" # ISN via Nexus Dashboard MSO Not Used
+    ip_learning                 = "yes"
+    ipv6_mcast_allow            = each.value.BD_FLOOD == "true" ? "yes" : "no"
+    limit_ip_learn_to_subnets   = "yes"
+    ll_addr                     = "::"
+    mac                         = "00:22:BD:F8:19:FF" # Cisco Default for all BDs
+    mcast_allow                 = each.value.BD_FLOOD == "true" ? "yes" : "no"
+    multi_dst_pkt_act           = each.value.BD_FLOOD == "true" ? "bd-flood" : "drop"
+    bridge_domain_type          = "regular"
+    unicast_route               = "yes"
+    unk_mac_ucast_act           = each.value.BD_FLOOD == "true" ? "flood" : "proxy"
+    unk_mcast_act               = each.value.BD_FLOOD == "true" ? "flood" : "opt-flood"
+    v6unk_mcast_act             = each.value.BD_FLOOD == "true" ? "flood" : "opt-flood"
+    vmac                        = "not-applicable" # ISN via Nexus Dashboard MSO Not Used
+    
+    relation_fv_rs_ctx  = aci_vrf.localAciTenantApplicationProfileVrfIteration[each.key].id
     
     depends_on = [
         null_resource.GlobalFabricVlanUniquenessCheckerPython
     ]
 }
+
+resource "aci_subnet" "localAciTenantBridgeDomainSubnet" {
+    for_each = { for subnet in local.bd_subnet_ips : "${subnet.TENANT_NAME}-${subnet.APPLICATION_NAME}-${subnet.MACRO_SEGMENTATION_ZONE}-${subnet.SUBNET}" => subnet }
+  
+    parent_dn        = aci_bridge_domain.localAciTenantBridgeDomainIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
+    description      = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "subnet was created as a NCI Mode VLAN for a segmentation zone via Terraform from a CI/CD Pipeline."])
+    ip               = "${each.value.GW_IP}/${each.value.MASK}"
+    annotation       = "ORCHESTRATOR:TERRAFORM"
+    ctrl             = each.value.BD_FLOOD == "true" ? ["querier", "nd"] : ["unspecified"] 
+    scope            = ["private"]
+    virtual          = "no"
+  
+    depends_on = [
+        null_resource.GlobalFabricVlanUniquenessCheckerPython
+    ]  
+}
+
+resource "aci_vrf" "localAciTenantApplicationProfileVrfIteration" {
+     for_each = local.network_centric_epgs_bds_list
+
+    tenant_dn              = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
+    name                   = join("_",[each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF"])
+    description            = join (" ",[each.value.MACRO_SEGMENTATION_ZONE, " VRF was created as a macro-segmentation zone via Terraform from a CI/CD Pipeline."])
+    annotation             = "ORCHESTRATOR:TERRAFORM"
+    bd_enforced_enable     = "yes"
+    ip_data_plane_learning = "enabled"
+    knw_mcast_act          = "permit"
+    pc_enf_dir             = "ingress"
+    pc_enf_pref            = "enforced"
+    
+    depends_on = [
+        null_resource.GlobalFabricVlanUniquenessCheckerPython
+    ]
+}
+
+resource "aci_vrf_snmp_context" "localAciTenantApplicationProfileVrfSnmpIteration" {
+    for_each = local.network_centric_epgs_bds_list
+
+    vrf_dn      = aci_vrf.localAciTenantApplicationProfileVrfIteration[each.key].id
+    name        = join("_",[each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF","SNMP"])
+    annotation  = "ORCHESTRATOR:TERRAFORM"
+    
+    depends_on = [
+        null_resource.GlobalFabricVlanUniquenessCheckerPython
+    ]    
+}
+
+resource "aci_vrf_snmp_context_community" "localAciTenantApplicationProfileVrfSnmpCommunityIteration" {
+    for_each = local.network_centric_epgs_bds_list
+
+    vrf_snmp_context_dn = aci_vrf_snmp_context.localAciTenantApplicationProfileVrfSnmpIteration[each.key].id
+    name = join("-", [
+        replace(each.value.TENANT_NAME, "_", "-"),
+        replace(each.value.MACRO_SEGMENTATION_ZONE, "_", "-"),
+        "VRF"
+    ])
+    description = join(" ", [
+        replace(each.value.MACRO_SEGMENTATION_ZONE, "_", "-"), 
+        "VRF created via Terraform CI/CD"
+    ])
+    annotation = "ORCHESTRATOR:TERRAFORM"
+    
+    depends_on = [
+        null_resource.GlobalFabricVlanUniquenessCheckerPython
+    ]    
+}
+
 
 resource "aci_application_epg" "localAciTenantApplicationEndpointGroupIteration" {
     for_each = local.network_centric_epgs_bds_list
@@ -183,3 +273,4 @@ resource "aci_attachable_access_entity_profile" "localAciGlobalAttachableEntityA
     ]     
     
 }
+
