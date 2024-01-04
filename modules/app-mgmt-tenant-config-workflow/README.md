@@ -25,7 +25,17 @@ No modules.
 | [aci_attachable_access_entity_profile.localAciGlobalAttachableEntityAccessProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/attachable_access_entity_profile) | resource |
 | [aci_attachable_access_entity_profile.localAciTenantAttachableEntityAccessProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/attachable_access_entity_profile) | resource |
 | [aci_bridge_domain.localAciTenantBridgeDomainIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/bridge_domain) | resource |
+| [aci_contract.localAciTenantAppEpgInboundContractIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/contract) | resource |
+| [aci_contract.localAciTenantAppEpgOutboundContractIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/contract) | resource |
+| [aci_contract_subject.localAciTenantAppEpgInboundContractSubjectIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/contract_subject) | resource |
+| [aci_contract_subject.localAciTenantAppEpgOutboundContractSubjectIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/contract_subject) | resource |
+| [aci_contract_subject_filter.localAciTenantAppEpgInboundCtrSubjFiltIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/contract_subject_filter) | resource |
+| [aci_contract_subject_filter.localAciTenantAppEpgOutboundCtrSubjFiltIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/contract_subject_filter) | resource |
+| [aci_epg_to_contract.localAciTenantAppEpgInboundCtrAssocIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_contract) | resource |
+| [aci_epg_to_contract.localAciTenantAppEpgOutboundCtrAssocIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_contract) | resource |
 | [aci_epg_to_domain.localAciTenantEpgPhysDomAssocIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_domain) | resource |
+| [aci_filter.localAciTenantContractFiltersIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/filter) | resource |
+| [aci_filter_entry.localAciTenantContractFilterEntriesIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/filter_entry) | resource |
 | [aci_physical_domain.localAciTenantPhysicalDomainIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/physical_domain) | resource |
 | [aci_ranges.localAciTenantPhyDomVlanPoolRangesIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/ranges) | resource |
 | [aci_subnet.localAciTenantBridgeDomainSubnet](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/subnet) | resource |
@@ -34,6 +44,7 @@ No modules.
 | [aci_vrf.localAciTenantApplicationProfileVrfIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/vrf) | resource |
 | [aci_vrf_snmp_context.localAciTenantApplicationProfileVrfSnmpIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/vrf_snmp_context) | resource |
 | [aci_vrf_snmp_context_community.localAciTenantApplicationProfileVrfSnmpCommunityIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/vrf_snmp_context_community) | resource |
+| [null_resource.GlobalFabricSubnetUniquenessCheckerPython](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [null_resource.GlobalFabricVlanUniquenessCheckerPython](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 
 ## Inputs

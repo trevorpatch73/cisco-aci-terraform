@@ -1,9 +1,6 @@
-
-
 module "app-mgmt-tenant-config-workflow"{
   source = "./modules/app-mgmt-tenant-config-workflow"
 }
-
 
 /*
 module "fabric-node-workflow" {
