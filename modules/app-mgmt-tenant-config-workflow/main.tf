@@ -465,3 +465,98 @@ resource "aci_attachable_access_entity_profile" "localAciGlobalAttachableEntityA
     null_resource.GlobalFabricSubnetUniquenessCheckerPython
   ]
 }
+
+#################
+
+resource "aci_vlan_pool" "localAciTenantL3ExtVlanPoolIteration" {
+  for_each = local.distinct_tenants
+
+  name        = join("_", [each.value, "L3-EXT", "VLAN-POOL"])
+  description = join(" ", [each.value, " tenant L3Out VLAN Pool was created in a NCI Mode via Terraform from a CI/CD Pipeline."])
+  annotation  = "ORCHESTRATOR:TERRAFORM"
+  alloc_mode  = "static"
+
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]
+}
+
+resource "aci_ranges" "localAciTenantL3ExtVlanPoolRangesIteration" {
+  for_each = local.network_centric_epgs_bds_list
+
+  annotation   = "ORCHESTRATOR:TERRAFORM"
+  description  = join(" ", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "L3Out Transit VLAN was created segmentation zone via Terraform"])
+  vlan_pool_dn = aci_vlan_pool.localAciTenantL3ExtVlanPoolIteration[each.value.TENANT_NAME].id
+  from         = "vlan-${each.value.TRANSIT_VLAN_ID}"
+  to           = "vlan-${each.value.TRANSIT_VLAN_ID}"
+  alloc_mode   = "inherit"
+  role         = "external"
+
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]
+}
+
+resource "aci_l3_domain_profile" "localAciTenantL3ExternalDomainIteration" {
+  for_each = local.distinct_tenants
+
+  name                      = join("_", [each.value, "L3OUT-DOM"])
+  annotation                = "ORCHESTRATOR:TERRAFORM"
+  relation_infra_rs_vlan_ns = aci_vlan_pool.localAciTenantL3ExtVlanPoolIteration[each.key].id
+
+
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]
+}
+
+resource "aci_l3_outside" "localAciTenantAppProfVrfL3OutProfNgfwIteration" {
+  for_each = local.network_centric_epgs_bds_list
+  
+  tenant_dn                     = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
+  name                          = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT"])
+  description                   = join(" ", [each.value.MACRO_SEGMENTATION_ZONE, "L3Out routes to the Tenant NGFW as part of a macro-segmentation zone via Terraform."])
+  annotation                    = "ORCHESTRATOR:TERRAFORM"
+  enforce_rtctrl                = ["export"]
+  target_dscp                   = "unspecified"
+  mpls_enabled                  = "no"
+  pim                           = ["ipv4", "ipv6"]
+  
+  relation_l3ext_rs_ectx        = aci_vrf.localAciTenantApplicationProfileVrfIteration[each.key].id
+  relation_l3ext_rs_l3_dom_att  = aci_l3_domain_profile.localAciTenantL3ExternalDomainIteration["${each.value.TENANT_NAME}"].id
+
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]
+}
+
+resource "aci_external_network_instance_profile" "localAciTenantAppProfVrfL3OutEpgNgfwIteration" {
+  for_each = local.network_centric_epgs_bds_list
+  
+  l3_outside_dn   = aci_l3_outside.localAciTenantAppProfVrfL3OutProfNgfwIteration[each.key].id
+  name            = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT-EPG"])
+  annotation      = "ORCHESTRATOR:TERRAFORM"  
+  flood_on_encap  = "disabled"
+  match_t         = "AtleastOne"
+  pref_gr_memb    = "exclude"
+  prio            = "unspecified"
+  target_dscp     = "unspecified"
+  
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]
+}  
+
+resource "aci_l3_ext_subnet" "localAciTenantAppProfVrfL3OutEpgSnetNgfwIteration" {
+  for_each = local.network_centric_epgs_bds_list
+  
+  external_network_instance_profile_dn  = aci_external_network_instance_profile.localAciTenantAppProfVrfL3OutEpgNgfwIteration[each.key].id
+  description                           = "Deafult Route Out of Macro-Segmentation Zone"
+  ip                                    = "0.0.0.0/0"
+  annotation                            = "ORCHESTRATOR:TERRAFORM" 
+}  

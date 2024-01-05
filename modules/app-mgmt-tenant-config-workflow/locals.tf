@@ -28,6 +28,8 @@ locals {
         split(";", iteration.INBOUND_PORTS),
         split(";", iteration.OUTBOUND_PORTS)
       ]))
+      TRANSIT_VLAN_ID         = iteration.TRANSIT_VLAN_ID
+      TRANSIT_SUBNET          = iteration.TRANSIT_SUBNET
     }
   }
 
