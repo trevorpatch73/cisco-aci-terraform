@@ -14,6 +14,8 @@ No providers.
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_app-mgmt-tenant-config-workflow"></a> [app-mgmt-tenant-config-workflow](#module\_app-mgmt-tenant-config-workflow) | ./modules/app-mgmt-tenant-config-workflow | n/a |
+| <a name="module_endpoint-switchport-configuration-workflow"></a> [endpoint-switchport-configuration-workflow](#module\_endpoint-switchport-configuration-workflow) | ./modules/endpoint-switchport-configuration-workflow | n/a |
+| <a name="module_fabric-node-workflow"></a> [fabric-node-workflow](#module\_fabric-node-workflow) | ./modules/fabric-node-workflow | n/a |
 
 ## Resources
 

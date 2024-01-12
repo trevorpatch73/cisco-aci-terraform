@@ -223,6 +223,7 @@ resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltProtocolIcmpIteration
   description = "${each.value.SNOW_RECORD} - Allows ${each.value.PROTOCOL} to/from the Terraform Managed Node Out-Of-Band Management Interface."
 }
 
+/*
 resource "null_resource" "localAciOddSpineNodeStageFirmware" {
   for_each = local.FilteredOddSpines
 
@@ -535,6 +536,7 @@ resource "aci_maintenance_group_node" "localACIEvenLeafmaintMaintGrpNodeBlkItera
 
   pod_maintenance_group_dn = aci_pod_maintenance_group.localACIEvenLeafmaintMaintGrp.id
 }
+*/
 
 /*
 

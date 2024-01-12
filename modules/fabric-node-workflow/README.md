@@ -10,7 +10,6 @@ No requirements.
 | Name | Version |
 |------|---------|
 | <a name="provider_aci"></a> [aci](#provider\_aci) | n/a |
-| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 
 ## Modules
 
@@ -31,32 +30,12 @@ No modules.
 | [aci_filter_entry.localAciNodeMgmtOobCtrSubjFiltProtocolTcpUdpIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/filter_entry) | resource |
 | [aci_leaf_interface_profile.localAciFabricAccessLeafInterfaceProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/leaf_interface_profile) | resource |
 | [aci_leaf_profile.localAciFabricAccessLeafSwitchProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/leaf_profile) | resource |
-| [aci_maintenance_group_node.localACIEvenLeafmaintMaintGrpNodeBlkIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_group_node) | resource |
-| [aci_maintenance_group_node.localACIEvenSpinesmaintMaintGrpNodeBlkIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_group_node) | resource |
-| [aci_maintenance_group_node.localACIOddLeafmaintMaintGrpNodeBlkIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_group_node) | resource |
-| [aci_maintenance_group_node.localACIOddSpinesmaintMaintGrpNodeBlkIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_group_node) | resource |
-| [aci_maintenance_policy.localACIEvenLeafmaintMaintP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_policy) | resource |
-| [aci_maintenance_policy.localACIEvenSpinesmaintMaintP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_policy) | resource |
-| [aci_maintenance_policy.localACIOddLeafmaintMaintP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_policy) | resource |
-| [aci_maintenance_policy.localACIOddSpinesmaintMaintP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/maintenance_policy) | resource |
 | [aci_node_mgmt_epg.localAciNodeMgmtOobEPG](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/node_mgmt_epg) | resource |
-| [aci_pod_maintenance_group.localACIEvenLeafmaintMaintGrp](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/pod_maintenance_group) | resource |
-| [aci_pod_maintenance_group.localACIEvenSpinesmaintMaintGrp](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/pod_maintenance_group) | resource |
-| [aci_pod_maintenance_group.localACIOddLeafmaintMaintGrp](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/pod_maintenance_group) | resource |
-| [aci_pod_maintenance_group.localACIOddSpinesmaintMaintGrp](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/pod_maintenance_group) | resource |
 | [aci_rest.localAciRestLeafSWPROFAssocSWPOLGRP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest) | resource |
-| [aci_rest_managed.localACIEvenLeaftrigSchedP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest_managed) | resource |
-| [aci_rest_managed.localACIEvenSpinestrigSchedP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest_managed) | resource |
-| [aci_rest_managed.localACIOddLeaftrigSchedP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest_managed) | resource |
-| [aci_rest_managed.localACIOddSpinestrigSchedP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest_managed) | resource |
 | [aci_rest_managed.localAciNodeMgmtOobCtr](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest_managed) | resource |
 | [aci_static_node_mgmt_address.localAciStaticNodeMgmtAddrIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/static_node_mgmt_address) | resource |
 | [aci_vpc_domain_policy.localAciVpcDomainPolicyIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/vpc_domain_policy) | resource |
 | [aci_vpc_explicit_protection_group.localAciVpcExplictProtectionGroupIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/vpc_explicit_protection_group) | resource |
-| [null_resource.localAciEvenLeafNodeStageFirmware](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [null_resource.localAciEvenSpineNodeStageFirmware](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [null_resource.localAciOddLeafNodeStageFirmware](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [null_resource.localAciOddSpineNodeStageFirmware](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [aci_tenant.dataLocalAciTenantMgmt](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/tenant) | data source |
 
 ## Inputs
