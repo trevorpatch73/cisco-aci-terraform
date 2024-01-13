@@ -466,8 +466,6 @@ resource "aci_attachable_access_entity_profile" "localAciGlobalAttachableEntityA
   ]
 }
 
-#################
-
 resource "aci_vlan_pool" "localAciTenantL3ExtVlanPoolIteration" {
   for_each = local.distinct_tenants
 

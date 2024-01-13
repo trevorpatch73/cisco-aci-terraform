@@ -16,6 +16,26 @@ data "aci_leaf_interface_profile" "dataLocalAciFabricAccessLeafInterfaceProfileI
   name      = join("_", [each.value, "INTPROF"])
 }
 
+data "aci_tenant" "dataLocalAciTenantIteration" {
+  for_each = local.distinct_tenants
+    
+  name     = each.value
+}
+
+data "aci_application_profile" "dataLocalAciTenantApplicationProfileIteration" {
+  for_each   = local.AppProf_Map
+  
+  tenant_dn  = data.aci_tenant.dataLocalAciTenantIteration["${each.value.TENANT_NAME}"].id
+  name       = each.value.MACRO_SEGMENTATION_ZONE
+}
+
+data "aci_application_epg" "dataLocalAciTenantApplicationEndpointGroupIteration" {
+  for_each   = local.AppEpg_Map
+  
+  application_profile_dn  = data.aci_application_profile.dataLocalAciTenantApplicationProfileIteration["${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
+  name                    = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "aEPG"])
+}
+
 ######### POLICIES #########
 
 resource "aci_lacp_policy" "localAciLacpActivePolicy" {
@@ -37,6 +57,10 @@ resource "aci_access_port_selector" "localAciPhysInterfaceSelectorIteration" {
   name                      = join("_", ["Eth", each.value.ACI_NODE_SLOT, each.value.ACI_NODE_PORT])
   access_port_selector_type = "range"
   annotation                = "ORCHESTRATOR:TERRAFORM"
+  
+  lifecycle {
+    ignore_changes = [relation_infra_rs_acc_base_grp]
+  }  
 }
 
 resource "aci_access_port_block" "localAciPhysInterfaceSelectorPortBlockIteration" {
@@ -49,6 +73,39 @@ resource "aci_access_port_block" "localAciPhysInterfaceSelectorPortBlockIteratio
   from_port                         = "${each.value.ACI_NODE_PORT}"
   to_card                           = "${each.value.ACI_NODE_SLOT}"
   to_port                           = "${each.value.ACI_NODE_PORT}"
+  
+  lifecycle {
+    ignore_changes = [description]
+  }   
+}
+
+resource "aci_rest" "localAciRestPhysIntSelectDescIteration" {
+  for_each = local.PhysIntSelectDesc_Map
+
+  path = "/api/node/mo/uni/infra/accportprof-${data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].name}/hports-${aci_access_port_selector.localAciPhysInterfaceSelectorIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}-typ-range/portblk-${aci_access_port_block.localAciPhysInterfaceSelectorPortBlockIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}.json"
+
+  payload = <<EOF
+{
+  "infraPortBlk": {
+    "attributes": {
+      "dn": "uni/infra/accportprof-${data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].name}/hports-${aci_access_port_selector.localAciPhysInterfaceSelectorIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}-typ-range/portblk-${aci_access_port_block.localAciPhysInterfaceSelectorPortBlockIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}",
+      "descr": "${join(" ", [each.value.ENDPOINT_NAME, each.value.ENDPOINT_NIC])}"
+    },
+    "children": []
+  }
+}
+EOF
+}
+
+resource "aci_epg_to_static_path" "PhysIntSelectAppEpgStaticBindIteration" {
+  for_each   = local.PhysIntSelectAppEpgStaticBind_Map
+
+  application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
+  tdn  = "topology/pod-${each.value.ACI_POD_ID}/paths-${each.value.ACI_NODE_ID}/pathep-[eth${each.value.ACI_NODE_SLOT}/${each.value.ACI_NODE_PORT}]"
+  annotation = "ORCHESTRATOR:TERRAFORM"
+  encap  = "vlan-${each.value.VLAN_ID}"
+  instr_imedcy = "immediate"
+  mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
 }
 
 ######### NONBOND L2 PORTS #########
@@ -127,7 +184,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysPortChannelPol
 }
 
 resource "aci_rest" "localAciRestTenantPCIntSelectIntPolAssocIteration" {
-  for_each = local.TenantPCIntSelectIntPolAssoc_UniqueList
+  for_each = local.TenantPCIntSelectIntPolAssoc_Map
 
   path       = "/api/node/mo/uni/infra/accportprof-${data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].name}/hports-${aci_access_port_selector.localAciPhysInterfaceSelectorIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}-typ-range/rsaccBaseGrp.json"
   payload = <<EOF
@@ -159,14 +216,14 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysPortChannelPol
 }
 
 resource "aci_rest" "localAciRestGlobalPCIntSelectIntPolAssocIteration" {
-  for_each = local.GlobalPCIntSelectIntPolAssoc_UniqueList
+  for_each = local.GlobalPCIntSelectIntPolAssoc_Map
 
   path       = "/api/node/mo/uni/infra/accportprof-${data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].name}/hports-${aci_access_port_selector.localAciPhysInterfaceSelectorIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}-typ-range/rsaccBaseGrp.json"
   payload = <<EOF
 {
   "infraRsAccBaseGrp": {
     "attributes": {
-      "tDn": "${aci_leaf_access_bundle_policy_group.localAciGlobalPhysPortChannelPolicyGroup["GLOBAL.${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].id}",
+      "tDn": "${aci_leaf_access_bundle_policy_group.localAciGlobalPhysPortChannelPolicyGroup["${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].id}",
       "status": "created,modified"
     },
     "children": []
@@ -193,7 +250,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysVirtualPortCha
 }
 
 resource "aci_rest" "localAciRestTenantVPCIntSelectIntPolAssocIteration" {
-  for_each = local.TenantVPCIntSelectIntPolAssoc_UniqueList
+  for_each = local.TenantVPCIntSelectIntPolAssoc_Map
 
   path       = "/api/node/mo/uni/infra/accportprof-${data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].name}/hports-${aci_access_port_selector.localAciPhysInterfaceSelectorIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}-typ-range/rsaccBaseGrp.json"
   payload = <<EOF
@@ -225,14 +282,14 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortCha
 }
 
 resource "aci_rest" "localAciRestGlobalVPCIntSelectIntPolAssocIteration" {
-  for_each = local.GlobalVPCIntSelectIntPolAssoc_UniqueList
+  for_each = local.GlobalVPCIntSelectIntPolAssoc_Map
 
   path       = "/api/node/mo/uni/infra/accportprof-${data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].name}/hports-${aci_access_port_selector.localAciPhysInterfaceSelectorIteration["${each.value.ACI_NODE_ID}.${each.value.ACI_NODE_SLOT}.${each.value.ACI_NODE_PORT}"].name}-typ-range/rsaccBaseGrp.json"
   payload = <<EOF
 {
   "infraRsAccBaseGrp": {
     "attributes": {
-      "tDn": "${aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup["GLOBAL.${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].id}",
+      "tDn": "${aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup["${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].id}",
       "status": "created,modified"
     },
     "children": []

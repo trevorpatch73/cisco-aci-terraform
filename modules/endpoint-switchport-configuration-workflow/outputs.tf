@@ -1,18 +1,10 @@
 /*
-output "TenantAccessPortPolicyGroup_GroupList" {
-  value = local.TenantAccessPortPolicyGroup_GroupList
+output "TenantVirtualPortChannelPolicyGroup_GroupList" {
+  value = local.TenantVirtualPortChannelPolicyGroup_GroupList
 }
 
-
-output "TenantIntSelectIntPolAssoc_GroupedList" {
-  value = local.TenantIntSelectIntPolAssoc_GroupedList
+output "PhysIntSelectDesc_UniqueList" {
+  value = local.PhysIntSelectDesc_UniqueList
 }
 
-output "TenantIntSelectIntPolAssoc_FlatList" {
-  value = local.TenantIntSelectIntPolAssoc_FlatList
-}
-
-output "TenantIntSelectIntPolAssoc_UniqueList" {
-  value = local.TenantIntSelectIntPolAssoc_UniqueList
-}
 */

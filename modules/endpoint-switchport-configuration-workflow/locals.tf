@@ -5,6 +5,38 @@ locals {
   
   distinct_switch_nodes = toset(distinct([for node in local.iterations : node.ACI_NODE_ID]))
 
+  AppProf_GroupList = [
+    for i in local.iterations : 
+      "${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}"
+    if lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  AppProf_UniqueList = distinct(local.AppProf_GroupList)
+  
+  AppProf_Map = { for item in local.AppProf_UniqueList : 
+                  item => {
+                    TENANT_NAME             = split(".", item)[0]
+                    MACRO_SEGMENTATION_ZONE = split(".", item)[1]
+                  }
+                }
+
+  AppEpg_GroupList = [
+    for i in local.iterations : 
+      "${i.TENANT_NAME}.${i.APPLICATION_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.VLAN_ID}"
+    if lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  AppEpg_UniqueList = distinct(local.AppEpg_GroupList)
+  
+  AppEpg_Map = { for item in local.AppEpg_UniqueList : 
+                  item => {
+                    TENANT_NAME             = split(".", item)[0]
+                    APPLICATION_NAME        = split(".", item)[1]
+                    MACRO_SEGMENTATION_ZONE = split(".", item)[2]
+                    VLAN_ID                 = split(".", item)[3]
+                  }
+                }
+
   PhysInterfaceSelectors_GroupList = {
     for i in local.iterations : "${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => [i]...
     if lower(i.ACI_DOMAIN) == "phys"
@@ -22,7 +54,47 @@ locals {
   PhysInterfaceSelectors_UniqueList = { for idx, i in local.PhysInterfaceSelectors_FlatList : 
     "${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
   }  
-
+  
+  PhysIntSelectDesc_GroupList = [
+    for i in local.iterations : 
+      "${i.ENDPOINT_NAME}.${i.ENDPOINT_NIC}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  PhysIntSelectDesc_UniqueList = distinct(local.PhysIntSelectDesc_GroupList)
+ 
+  PhysIntSelectDesc_Map = { for item in local.PhysIntSelectDesc_UniqueList : 
+                  item => {
+                    ENDPOINT_NAME   = split(".", item)[0]
+                    ENDPOINT_NIC    = split(".", item)[1]
+                    ACI_NODE_ID     = split(".", item)[2]
+                    ACI_NODE_SLOT   = split(".", item)[3]
+                    ACI_NODE_PORT   = split(".", item)[4]
+                  }
+                }    
+               
+  PhysIntSelectAppEpgStaticBind_GroupList = [
+    for i in local.iterations : 
+      "${i.ACI_POD_ID}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}.${i.DOT1Q_ENABLE}.${i.TENANT_NAME}.${i.APPLICATION_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.VLAN_ID}"
+    if lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  PhysIntSelectAppEpgStaticBind_UniqueList = distinct(local.PhysIntSelectAppEpgStaticBind_GroupList)
+ 
+  PhysIntSelectAppEpgStaticBind_Map = { for item in local.PhysIntSelectAppEpgStaticBind_UniqueList : 
+                  item => {
+                    ACI_POD_ID              = split(".", item)[0]
+                    ACI_NODE_ID             = split(".", item)[1]
+                    ACI_NODE_SLOT           = split(".", item)[2]
+                    ACI_NODE_PORT           = split(".", item)[3]
+                    DOT1Q_ENABLE            = split(".", item)[4]
+                    TENANT_NAME             = split(".", item)[5]
+                    APPLICATION_NAME        = split(".", item)[6]
+                    MACRO_SEGMENTATION_ZONE = split(".", item)[7]
+                    VLAN_ID                 = split(".", item)[8]
+                  }
+                }  
+                
 ######### NONBOND L2 PORTS #########
 
   TenantAccessPortPolicyGroup_GroupList = {
@@ -120,23 +192,24 @@ locals {
     "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
   }
   
-  TenantPCIntSelectIntPolAssoc_FlatList = flatten([
-    for _, groups in local.TenantPortChannelPolicyGroup_GroupList : [
-      for group in groups : {
-        TENANT_NAME     = group[0]["TENANT_NAME"],
-        ENDPOINT_NAME   = group[0]["ENDPOINT_NAME"],
-        BOND_GROUP      = group[0]["BOND_GROUP"],
-        ACI_NODE_ID     = group[0]["ACI_NODE_ID"],
-        ACI_NODE_SLOT   = group[0]["ACI_NODE_SLOT"],
-        ACI_NODE_PORT   = group[0]["ACI_NODE_PORT"]
-      }
-    ]
-  ])
-
-  TenantPCIntSelectIntPolAssoc_UniqueList = { 
-    for i in local.TenantPCIntSelectIntPolAssoc_FlatList : 
-      "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
-  }  
+  TenantPCIntSelectIntPolAssoc_GroupList = [
+    for i in local.iterations : 
+      "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "false" && lower(i.MULTI_TENANT) == "false" && lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  TenantPCIntSelectIntPolAssoc_UniqueList = distinct(local.TenantPCIntSelectIntPolAssoc_GroupList)
+  
+  TenantPCIntSelectIntPolAssoc_Map = { for item in local.TenantPCIntSelectIntPolAssoc_UniqueList : 
+                  item => {
+                    TENANT_NAME   = split(".", item)[0]
+                    ENDPOINT_NAME = split(".", item)[1]
+                    BOND_GROUP    = split(".", item)[2]
+                    ACI_NODE_ID   = split(".", item)[3]
+                    ACI_NODE_SLOT = split(".", item)[4]
+                    ACI_NODE_PORT = split(".", item)[5]
+                  }
+                }  
   
   GlobalPortChannelPolicyGroup_GroupList = {
     for i in local.iterations : "Global.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => [i]...
@@ -155,22 +228,23 @@ locals {
     "${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
   }
   
-  GlobalPCIntSelectIntPolAssoc_FlatList = flatten([
-    for _, groups in local.GlobalPortChannelPolicyGroup_GroupList : [
-      for group in groups : {
-        ENDPOINT_NAME   = group[0]["ENDPOINT_NAME"],
-        BOND_GROUP      = group[0]["BOND_GROUP"],
-        ACI_NODE_ID     = group[0]["ACI_NODE_ID"],
-        ACI_NODE_SLOT   = group[0]["ACI_NODE_SLOT"],
-        ACI_NODE_PORT   = group[0]["ACI_NODE_PORT"]
-      }
-    ]
-  ])
-
-  GlobalPCIntSelectIntPolAssoc_UniqueList = { 
-    for i in local.GlobalPCIntSelectIntPolAssoc_FlatList : 
-      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
-  }    
+  GlobalPCIntSelectIntPolAssoc_GroupList = [
+    for i in local.iterations : 
+      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "false" && lower(i.MULTI_TENANT) == "true" && lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  GlobalPCIntSelectIntPolAssoc_UniqueList = distinct(local.GlobalPCIntSelectIntPolAssoc_GroupList)
+  
+  GlobalPCIntSelectIntPolAssoc_Map = { for item in local.GlobalPCIntSelectIntPolAssoc_UniqueList : 
+                  item => {
+                    ENDPOINT_NAME = split(".", item)[1]
+                    BOND_GROUP    = split(".", item)[2]
+                    ACI_NODE_ID   = split(".", item)[3]
+                    ACI_NODE_SLOT = split(".", item)[4]
+                    ACI_NODE_PORT = split(".", item)[5]
+                  }
+                }     
 
 ######### VIRTUAL PORT-CHANNEL L2 PORTS #########
 
@@ -184,31 +258,32 @@ locals {
       [{ 
         TENANT_NAME           = items[0][0].TENANT_NAME, 
         ENDPOINT_NAME         = items[0][0].ENDPOINT_NAME,
-        BOND_GROUP   = items[0][0].BOND_GROUP
+        BOND_GROUP            = items[0][0].BOND_GROUP
       }]
   ])
   
   TenantVirtualPortChannelPolicyGroup_UniqueList = { for idx, i in local.TenantVirtualPortChannelPolicyGroup_FlatList : 
     "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
   }
-
-  TenantVPCIntSelectIntPolAssoc_FlatList = flatten([
-    for _, groups in local.TenantVirtualPortChannelPolicyGroup_GroupList : [
-      for group in groups : {
-        TENANT_NAME     = group[0]["TENANT_NAME"],
-        ENDPOINT_NAME   = group[0]["ENDPOINT_NAME"],
-        BOND_GROUP      = group[0]["BOND_GROUP"],
-        ACI_NODE_ID     = group[0]["ACI_NODE_ID"],
-        ACI_NODE_SLOT   = group[0]["ACI_NODE_SLOT"],
-        ACI_NODE_PORT   = group[0]["ACI_NODE_PORT"]
-      }
-    ]
-  ])
-
-  TenantVPCIntSelectIntPolAssoc_UniqueList = { 
-    for i in local.TenantVPCIntSelectIntPolAssoc_FlatList : 
-      "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
-  } 
+  
+  TenantVPCIntSelectIntPolAssoc_GroupList = [
+    for i in local.iterations : 
+      "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "false" && lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  TenantVPCIntSelectIntPolAssoc_UniqueList = distinct(local.TenantVPCIntSelectIntPolAssoc_GroupList)
+  
+  TenantVPCIntSelectIntPolAssoc_Map = { for item in local.TenantVPCIntSelectIntPolAssoc_UniqueList : 
+                  item => {
+                    TENANT_NAME   = split(".", item)[0]
+                    ENDPOINT_NAME = split(".", item)[1]
+                    BOND_GROUP    = split(".", item)[2]
+                    ACI_NODE_ID   = split(".", item)[3]
+                    ACI_NODE_SLOT = split(".", item)[4]
+                    ACI_NODE_PORT = split(".", item)[5]
+                  }
+                }  
   
   GlobalVirtualPortChannelPolicyGroup_GroupList = {
     for i in local.iterations : "Global.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => [i]...
@@ -227,21 +302,22 @@ locals {
     "${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
   }    
   
-  GlobalVPCIntSelectIntPolAssoc_FlatList = flatten([
-    for _, groups in local.GlobalPortChannelPolicyGroup_GroupList : [
-      for group in groups : {
-        ENDPOINT_NAME   = group[0]["ENDPOINT_NAME"],
-        BOND_GROUP      = group[0]["BOND_GROUP"],
-        ACI_NODE_ID     = group[0]["ACI_NODE_ID"],
-        ACI_NODE_SLOT   = group[0]["ACI_NODE_SLOT"],
-        ACI_NODE_PORT   = group[0]["ACI_NODE_PORT"]
-      }
-    ]
-  ])
-
-  GlobalVPCIntSelectIntPolAssoc_UniqueList = { 
-    for i in local.GlobalVPCIntSelectIntPolAssoc_FlatList : 
-      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
-  }
+  GlobalVPCIntSelectIntPolAssoc_GroupList = [
+    for i in local.iterations : 
+      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "true" && lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  GlobalVPCIntSelectIntPolAssoc_UniqueList = distinct(local.GlobalVPCIntSelectIntPolAssoc_GroupList)
+  
+  GlobalVPCIntSelectIntPolAssoc_Map = { for item in local.GlobalVPCIntSelectIntPolAssoc_UniqueList : 
+                  item => {
+                    ENDPOINT_NAME = split(".", item)[1]
+                    BOND_GROUP    = split(".", item)[2]
+                    ACI_NODE_ID   = split(".", item)[3]
+                    ACI_NODE_SLOT = split(".", item)[4]
+                    ACI_NODE_PORT = split(".", item)[5]
+                  }
+                } 
   
 }
