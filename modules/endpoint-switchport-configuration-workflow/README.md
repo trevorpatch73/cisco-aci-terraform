@@ -10,6 +10,8 @@ No requirements.
 | Name | Version |
 |------|---------|
 | <a name="provider_aci"></a> [aci](#provider\_aci) | n/a |
+| <a name="provider_local"></a> [local](#provider\_local) | n/a |
+| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 
 ## Modules
 
@@ -21,7 +23,9 @@ No modules.
 |------|------|
 | [aci_access_port_block.localAciPhysInterfaceSelectorPortBlockIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/access_port_block) | resource |
 | [aci_access_port_selector.localAciPhysInterfaceSelectorIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/access_port_selector) | resource |
-| [aci_epg_to_static_path.PhysIntSelectAppEpgStaticBindIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_static_path) | resource |
+| [aci_epg_to_static_path.PhysNonBondIntSelectAppEpgStaticBindIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_static_path) | resource |
+| [aci_epg_to_static_path.localAciGlobalVpcIntSelectEpgAssoc](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_static_path) | resource |
+| [aci_epg_to_static_path.localAciTenantVpcIntSelectEpgAssoc](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/epg_to_static_path) | resource |
 | [aci_lacp_policy.localAciLacpActivePolicy](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/lacp_policy) | resource |
 | [aci_leaf_access_bundle_policy_group.localAciGlobalPhysPortChannelPolicyGroup](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/leaf_access_bundle_policy_group) | resource |
 | [aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/leaf_access_bundle_policy_group) | resource |
@@ -36,12 +40,15 @@ No modules.
 | [aci_rest.localAciRestTenantNonBondIntSelectIntPolAssocIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest) | resource |
 | [aci_rest.localAciRestTenantPCIntSelectIntPolAssocIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest) | resource |
 | [aci_rest.localAciRestTenantVPCIntSelectIntPolAssocIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/rest) | resource |
+| [null_resource.AutogenEndpointVpcConfigPython](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/application_epg) | data source |
 | [aci_application_profile.dataLocalAciTenantApplicationProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/application_profile) | data source |
 | [aci_attachable_access_entity_profile.dataLocalAciAttachableEntityProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/attachable_access_entity_profile) | data source |
 | [aci_attachable_access_entity_profile.dataLocalAciGobalAAEP](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/attachable_access_entity_profile) | data source |
 | [aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/leaf_interface_profile) | data source |
 | [aci_tenant.dataLocalAciTenantIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/data-sources/tenant) | data source |
+| [local_file.localFileAutogenGlobalEndpointVpcConfigPython](https://registry.terraform.io/providers/hashicorp/local/latest/docs/data-sources/file) | data source |
+| [local_file.localFileAutogenTenantEndpointVpcConfigPython](https://registry.terraform.io/providers/hashicorp/local/latest/docs/data-sources/file) | data source |
 
 ## Inputs
 

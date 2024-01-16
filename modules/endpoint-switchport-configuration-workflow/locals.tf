@@ -72,28 +72,6 @@ locals {
                     ACI_NODE_PORT   = split(".", item)[4]
                   }
                 }    
-               
-  PhysIntSelectAppEpgStaticBind_GroupList = [
-    for i in local.iterations : 
-      "${i.ACI_POD_ID}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}.${i.DOT1Q_ENABLE}.${i.TENANT_NAME}.${i.APPLICATION_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.VLAN_ID}"
-    if lower(i.ACI_DOMAIN) == "phys"
-  ]
-  
-  PhysIntSelectAppEpgStaticBind_UniqueList = distinct(local.PhysIntSelectAppEpgStaticBind_GroupList)
- 
-  PhysIntSelectAppEpgStaticBind_Map = { for item in local.PhysIntSelectAppEpgStaticBind_UniqueList : 
-                  item => {
-                    ACI_POD_ID              = split(".", item)[0]
-                    ACI_NODE_ID             = split(".", item)[1]
-                    ACI_NODE_SLOT           = split(".", item)[2]
-                    ACI_NODE_PORT           = split(".", item)[3]
-                    DOT1Q_ENABLE            = split(".", item)[4]
-                    TENANT_NAME             = split(".", item)[5]
-                    APPLICATION_NAME        = split(".", item)[6]
-                    MACRO_SEGMENTATION_ZONE = split(".", item)[7]
-                    VLAN_ID                 = split(".", item)[8]
-                  }
-                }  
                 
 ######### NONBOND L2 PORTS #########
 
@@ -170,7 +148,29 @@ locals {
   GlobalNonBondIntSelectIntPolAssoc_UniqueList = { 
     for i in local.GlobalNonBondIntSelectIntPolAssoc_FlatList : 
       "${i.ENDPOINT_MAKE}.${i.ENDPOINT_MODEL}.${i.ENDPOINT_OS}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
-  }  
+  } 
+  
+  PhysNonBondIntSelectAppEpgStaticBind_GroupList = [
+    for i in local.iterations : 
+      "${i.ACI_POD_ID}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}.${i.DOT1Q_ENABLE}.${i.TENANT_NAME}.${i.APPLICATION_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.VLAN_ID}"
+    if lower(i.BOND) == "false" && lower(i.ACI_DOMAIN) == "phys"
+  ]
+  
+  PhysNonBondIntSelectAppEpgStaticBind_UniqueList = distinct(local.PhysNonBondIntSelectAppEpgStaticBind_GroupList)
+ 
+  PhysNonBondIntSelectAppEpgStaticBind_Map = { for item in local.PhysNonBondIntSelectAppEpgStaticBind_UniqueList : 
+                  item => {
+                    ACI_POD_ID              = split(".", item)[0]
+                    ACI_NODE_ID             = split(".", item)[1]
+                    ACI_NODE_SLOT           = split(".", item)[2]
+                    ACI_NODE_PORT           = split(".", item)[3]
+                    DOT1Q_ENABLE            = split(".", item)[4]
+                    TENANT_NAME             = split(".", item)[5]
+                    APPLICATION_NAME        = split(".", item)[6]
+                    MACRO_SEGMENTATION_ZONE = split(".", item)[7]
+                    VLAN_ID                 = split(".", item)[8]
+                  }
+                }    
   
 ######### PORT-CHANNEL L2 PORTS #########
 
@@ -318,6 +318,42 @@ locals {
                     ACI_NODE_SLOT = split(".", item)[4]
                     ACI_NODE_PORT = split(".", item)[5]
                   }
-                } 
+                }
+  TenantVpcIntSelectEpgAssoc_Iterations =   csvdecode(data.local_file.localFileAutogenTenantEndpointVpcConfigPython.content)
   
+  TenantVpcIntSelectEpgAssoc_List = {
+    for i in local.TenantVpcIntSelectEpgAssoc_Iterations :
+    "${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ODD_NODE_ID}.${i.EVEN_NODE_ID}.${i.ACI_POD_ID}.${i.DOT1Q_ENABLE}.${i.TENANT_NAME}.${i.APPLICATION_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.VLAN_ID}" => {
+      ENDPOINT_NAME             = i.ENDPOINT_NAME
+      BOND_GROUP                = i.BOND_GROUP
+      ODD_NODE_ID               = i.ODD_NODE_ID
+      EVEN_NODE_ID              = i.EVEN_NODE_ID
+      ACI_POD_ID                = i.ACI_POD_ID
+      DOT1Q_ENABLE              = i.DOT1Q_ENABLE
+      TENANT_NAME               = i.TENANT_NAME 
+      APPLICATION_NAME          = i.APPLICATION_NAME 
+      MACRO_SEGMENTATION_ZONE   = i.MACRO_SEGMENTATION_ZONE
+      VLAN_ID                   = i.VLAN_ID  
+    }
+  }  
+  
+  
+  GlobalVpcIntSelectEpgAssoc_Iterations =   csvdecode(data.local_file.localFileAutogenGlobalEndpointVpcConfigPython.content)
+  
+  GlobalVpcIntSelectEpgAssoc_List = {
+    for i in local.GlobalVpcIntSelectEpgAssoc_Iterations :
+    "${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ODD_NODE_ID}.${i.EVEN_NODE_ID}.${i.ACI_POD_ID}.${i.DOT1Q_ENABLE}.${i.TENANT_NAME}.${i.APPLICATION_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.VLAN_ID}" => {
+      ENDPOINT_NAME             = i.ENDPOINT_NAME
+      BOND_GROUP                = i.BOND_GROUP
+      ODD_NODE_ID               = i.ODD_NODE_ID
+      EVEN_NODE_ID              = i.EVEN_NODE_ID
+      ACI_POD_ID                = i.ACI_POD_ID
+      DOT1Q_ENABLE              = i.DOT1Q_ENABLE
+      TENANT_NAME               = i.TENANT_NAME 
+      APPLICATION_NAME          = i.APPLICATION_NAME 
+      MACRO_SEGMENTATION_ZONE   = i.MACRO_SEGMENTATION_ZONE
+      VLAN_ID                   = i.VLAN_ID  
+    }
+  }    
+
 }

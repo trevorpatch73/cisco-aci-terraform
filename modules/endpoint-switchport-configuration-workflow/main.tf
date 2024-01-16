@@ -1,25 +1,69 @@
+######### DEPENDENCIES #########
+resource "null_resource" "AutogenEndpointVpcConfigPython" {
+  provisioner "local-exec" {
+    command     = "python3 autogen-endpoint-vpc-config.py"
+    working_dir = "${path.root}/scripts"
+  }
+
+  triggers = {
+    csv_hash = filemd5("${path.root}/data/endpoint-switchport-configuration.csv")
+  }
+}
+
+data "local_file" "localFileAutogenTenantEndpointVpcConfigPython" {
+  filename   = "./data/autogen-tenant-endpoint-vpc-config.csv"
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
+}
+
+data "local_file" "localFileAutogenGlobalEndpointVpcConfigPython" {
+  filename   = "./data/autogen-global-endpoint-vpc-config.csv"
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
+}
+
 ######### IMPORTS #########
 
 data "aci_attachable_access_entity_profile" "dataLocalAciAttachableEntityProfileIteration" {
     for_each = local.distinct_tenants
     
     name  = join("_", [each.value, "AAEP"])
+    
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
 }
 
 data "aci_attachable_access_entity_profile" "dataLocalAciGobalAAEP" {
     name  = "GLOBAL_AAEP"
+    
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
 }
 
 data "aci_leaf_interface_profile" "dataLocalAciFabricAccessLeafInterfaceProfileIteration" {
   for_each  = local.distinct_switch_nodes
   
   name      = join("_", [each.value, "INTPROF"])
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
 }
 
 data "aci_tenant" "dataLocalAciTenantIteration" {
   for_each = local.distinct_tenants
     
   name     = each.value
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
 }
 
 data "aci_application_profile" "dataLocalAciTenantApplicationProfileIteration" {
@@ -27,6 +71,10 @@ data "aci_application_profile" "dataLocalAciTenantApplicationProfileIteration" {
   
   tenant_dn  = data.aci_tenant.dataLocalAciTenantIteration["${each.value.TENANT_NAME}"].id
   name       = each.value.MACRO_SEGMENTATION_ZONE
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
 }
 
 data "aci_application_epg" "dataLocalAciTenantApplicationEndpointGroupIteration" {
@@ -34,6 +82,10 @@ data "aci_application_epg" "dataLocalAciTenantApplicationEndpointGroupIteration"
   
   application_profile_dn  = data.aci_application_profile.dataLocalAciTenantApplicationProfileIteration["${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
   name                    = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "aEPG"])
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
 }
 
 ######### POLICIES #########
@@ -46,6 +98,10 @@ resource "aci_lacp_policy" "localAciLacpActivePolicy" {
   max_links   = "16"
   min_links   = "1"
   mode        = "active"
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
 }
 
 ######### GLOBAL #########
@@ -57,6 +113,10 @@ resource "aci_access_port_selector" "localAciPhysInterfaceSelectorIteration" {
   name                      = join("_", ["Eth", each.value.ACI_NODE_SLOT, each.value.ACI_NODE_PORT])
   access_port_selector_type = "range"
   annotation                = "ORCHESTRATOR:TERRAFORM"
+
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
   
   lifecycle {
     ignore_changes = [relation_infra_rs_acc_base_grp]
@@ -73,9 +133,16 @@ resource "aci_access_port_block" "localAciPhysInterfaceSelectorPortBlockIteratio
   from_port                         = "${each.value.ACI_NODE_PORT}"
   to_card                           = "${each.value.ACI_NODE_SLOT}"
   to_port                           = "${each.value.ACI_NODE_PORT}"
+
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
   
   lifecycle {
-    ignore_changes = [description]
+    ignore_changes = [
+      description,
+      relation_infra_rs_acc_bndl_subgrp
+    ]
   }   
 }
 
@@ -95,17 +162,11 @@ resource "aci_rest" "localAciRestPhysIntSelectDescIteration" {
   }
 }
 EOF
-}
 
-resource "aci_epg_to_static_path" "PhysIntSelectAppEpgStaticBindIteration" {
-  for_each   = local.PhysIntSelectAppEpgStaticBind_Map
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
 
-  application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
-  tdn  = "topology/pod-${each.value.ACI_POD_ID}/paths-${each.value.ACI_NODE_ID}/pathep-[eth${each.value.ACI_NODE_SLOT}/${each.value.ACI_NODE_PORT}]"
-  annotation = "ORCHESTRATOR:TERRAFORM"
-  encap  = "vlan-${each.value.VLAN_ID}"
-  instr_imedcy = "immediate"
-  mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
 }
 
 ######### NONBOND L2 PORTS #########
@@ -119,6 +180,11 @@ resource "aci_leaf_access_port_policy_group" "localAciTenantPhysAccessPortPolicy
   
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciAttachableEntityProfileIteration[each.value.TENANT_NAME].id
+
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
+  
 }
 
 resource "aci_rest" "localAciRestTenantNonBondIntSelectIntPolAssocIteration" {
@@ -136,6 +202,13 @@ resource "aci_rest" "localAciRestTenantNonBondIntSelectIntPolAssocIteration" {
   }
 }
 EOF
+
+  depends_on = [
+    aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
+    aci_leaf_access_port_policy_group.localAciTenantPhysAccessPortPolicyGroupIteration,
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
+
 }
 
 resource "aci_leaf_access_port_policy_group" "localAciGlobalPhysAccessPortPolicyGroupIteration" {
@@ -147,6 +220,11 @@ resource "aci_leaf_access_port_policy_group" "localAciGlobalPhysAccessPortPolicy
 
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciGobalAAEP.id
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
+  
 }
 
 resource "aci_rest" "localAciRestGlobalNonBondIntSelectIntPolAssocIteration" {
@@ -164,6 +242,27 @@ resource "aci_rest" "localAciRestGlobalNonBondIntSelectIntPolAssocIteration" {
   }
 }
 EOF
+
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ] 
+
+}
+
+resource "aci_epg_to_static_path" "PhysNonBondIntSelectAppEpgStaticBindIteration" {
+  for_each   = local.PhysNonBondIntSelectAppEpgStaticBind_Map
+
+  application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
+  tdn  = "topology/pod-${each.value.ACI_POD_ID}/paths-${each.value.ACI_NODE_ID}/pathep-[eth${each.value.ACI_NODE_SLOT}/${each.value.ACI_NODE_PORT}]"
+  annotation = "ORCHESTRATOR:TERRAFORM"
+  encap  = "vlan-${each.value.VLAN_ID}"
+  instr_imedcy = "immediate"
+  mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]   
+  
 }
 
 ######### PORT-CHANNEL L2 Ports #########
@@ -181,6 +280,11 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysPortChannelPol
   
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]   
+  
 }
 
 resource "aci_rest" "localAciRestTenantPCIntSelectIntPolAssocIteration" {
@@ -198,6 +302,13 @@ resource "aci_rest" "localAciRestTenantPCIntSelectIntPolAssocIteration" {
   }
 }
 EOF
+
+  depends_on = [
+    aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
+    aci_leaf_access_bundle_policy_group.localAciTenantPhysPortChannelPolicyGroup,
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
+
 }
 
 resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysPortChannelPolicyGroup" {
@@ -213,6 +324,11 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysPortChannelPol
   
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
+  
 }
 
 resource "aci_rest" "localAciRestGlobalPCIntSelectIntPolAssocIteration" {
@@ -230,6 +346,13 @@ resource "aci_rest" "localAciRestGlobalPCIntSelectIntPolAssocIteration" {
   }
 }
 EOF
+
+  depends_on = [
+    aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
+    aci_leaf_access_bundle_policy_group.localAciGlobalPhysPortChannelPolicyGroup,
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
+
 }
 
 ######### VIRTUAL PORT-CHANNEL L2 PORTS #########
@@ -247,6 +370,11 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysVirtualPortCha
   
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]    
+  
 }
 
 resource "aci_rest" "localAciRestTenantVPCIntSelectIntPolAssocIteration" {
@@ -264,6 +392,30 @@ resource "aci_rest" "localAciRestTenantVPCIntSelectIntPolAssocIteration" {
   }
 }
 EOF
+
+  depends_on = [
+    aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
+    aci_leaf_access_bundle_policy_group.localAciTenantPhysVirtualPortChannelPolicyGroup,
+    null_resource.AutogenEndpointVpcConfigPython
+  ]  
+
+}
+
+resource "aci_epg_to_static_path" "localAciTenantVpcIntSelectEpgAssoc" {
+  for_each            = local.TenantVpcIntSelectEpgAssoc_List
+
+
+  application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
+  tdn  = "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciTenantPhysVirtualPortChannelPolicyGroup["${each.value.TENANT_NAME}.${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]"
+  annotation = "ORCHESTRATOR:TERRAFORM"
+  encap  = "vlan-${each.value.VLAN_ID}"
+  instr_imedcy = "immediate"
+  mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython,
+    data.local_file.localFileAutogenTenantEndpointVpcConfigPython
+  ]   
 }
 
 resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortChannelPolicyGroup" {
@@ -279,6 +431,11 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortCha
   
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython
+  ]    
+  
 }
 
 resource "aci_rest" "localAciRestGlobalVPCIntSelectIntPolAssocIteration" {
@@ -296,4 +453,28 @@ resource "aci_rest" "localAciRestGlobalVPCIntSelectIntPolAssocIteration" {
   }
 }
 EOF
+
+  depends_on = [
+    aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
+    aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup,
+    null_resource.AutogenEndpointVpcConfigPython
+  ]
+
+}
+
+resource "aci_epg_to_static_path" "localAciGlobalVpcIntSelectEpgAssoc" {
+  for_each            = local.GlobalVpcIntSelectEpgAssoc_List
+
+
+  application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
+  tdn  = "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup["${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]"
+  annotation = "ORCHESTRATOR:TERRAFORM"
+  encap  = "vlan-${each.value.VLAN_ID}"
+  instr_imedcy = "immediate"
+  mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
+  
+  depends_on = [
+    null_resource.AutogenEndpointVpcConfigPython,
+    data.local_file.localFileAutogenGlobalEndpointVpcConfigPython
+  ]   
 }
