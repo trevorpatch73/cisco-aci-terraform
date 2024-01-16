@@ -71,7 +71,22 @@ locals {
                     ACI_NODE_SLOT   = split(".", item)[3]
                     ACI_NODE_PORT   = split(".", item)[4]
                   }
-                }    
+                }
+                
+  ExternalOutside_GroupList = [
+    for i in local.iterations : 
+      "${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}"
+    if lower(i.ACI_DOMAIN) == "l3"
+  ]
+  
+  ExternalOutside_UniqueList = distinct(local.ExternalOutside_GroupList)
+  
+  ExternalOutside_Map = { for item in local.ExternalOutside_UniqueList : 
+                  item => {
+                    TENANT_NAME             = split(".", item)[0]
+                    MACRO_SEGMENTATION_ZONE = split(".", item)[1]
+                  }
+                }                
                 
 ######### NONBOND L2 PORTS #########
 
@@ -319,7 +334,8 @@ locals {
                     ACI_NODE_PORT = split(".", item)[5]
                   }
                 }
-  TenantVpcIntSelectEpgAssoc_Iterations =   csvdecode(data.local_file.localFileAutogenTenantEndpointVpcConfigPython.content)
+                
+  TenantVpcIntSelectEpgAssoc_Iterations   =   csvdecode(file("./data/autogen-tenant-endpoint-vpc-config.csv"))
   
   TenantVpcIntSelectEpgAssoc_List = {
     for i in local.TenantVpcIntSelectEpgAssoc_Iterations :
@@ -338,7 +354,7 @@ locals {
   }  
   
   
-  GlobalVpcIntSelectEpgAssoc_Iterations =   csvdecode(data.local_file.localFileAutogenGlobalEndpointVpcConfigPython.content)
+  GlobalVpcIntSelectEpgAssoc_Iterations =   csvdecode(file("./data/autogen-global-endpoint-vpc-config.csv"))
   
   GlobalVpcIntSelectEpgAssoc_List = {
     for i in local.GlobalVpcIntSelectEpgAssoc_Iterations :
@@ -354,6 +370,27 @@ locals {
       MACRO_SEGMENTATION_ZONE   = i.MACRO_SEGMENTATION_ZONE
       VLAN_ID                   = i.VLAN_ID  
     }
-  }    
+  }
+
+######### VIRTUAL PORT-CHANNEL L3 Out #########
+
+  GlobalVpcExtOut_NodeGroupList = [
+    for i in local.iterations : 
+      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_POD_ID}.${i.ACI_NODE_ID}.${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "true" && lower(i.ACI_DOMAIN) == "l3"
+  ]
+  
+  GlobalVpcExtOut_NodeUniqueList = distinct(local.GlobalVpcExtOut_NodeGroupList)
+  
+  GlobalVpcExtOut_NodeMap = { for item in local.GlobalVpcExtOut_NodeUniqueList : 
+                  item => {
+                    ENDPOINT_NAME           = split(".", item)[1]
+                    BOND_GROUP              = split(".", item)[2]
+                    ACI_POD_ID              = split(".", item)[3]
+                    ACI_NODE_ID             = split(".", item)[4]
+                    TENANT_NAME             = split(".", item)[5]
+                    MACRO_SEGMENTATION_ZONE = split(".", item)[6]
+                  }
+                }  
 
 }

@@ -2,12 +2,12 @@ import csv
 import os
 from collections import defaultdict
 
-input_file_path = '../data/endpoint-switchport-configuration.csv'
+input_file_path = './data/endpoint-switchport-configuration.csv'
 
 
 def tenant_epg_converter():
     
-    output_file_path = '../data/autogen-tenant-endpoint-vpc-config.csv'    
+    output_file_path = './data/autogen-tenant-endpoint-vpc-config.csv'    
     
     file_exists = os.path.exists(output_file_path)
     
@@ -62,7 +62,7 @@ def tenant_epg_converter():
 
 def global_epg_converter():
     
-    output_file_path = '../data/autogen-global-endpoint-vpc-config.csv'    
+    output_file_path = './data/autogen-global-endpoint-vpc-config.csv'    
     
     file_exists = os.path.exists(output_file_path)
     

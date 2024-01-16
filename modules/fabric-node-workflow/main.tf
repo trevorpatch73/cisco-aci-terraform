@@ -3,7 +3,7 @@ resource "aci_fabric_node_member" "localAciFabricNodeMemberIteration" {
 
   name        = each.value.SWITCH_NAME          #STRING
   serial      = each.value.SWITCH_SERIAL_NUMBER #STRING
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = each.value.SNOW_RECORD #STRING
   ext_pool_id = "0"
   fabric_id   = "1"
@@ -18,7 +18,7 @@ resource "aci_leaf_interface_profile" "localAciFabricAccessLeafInterfaceProfileI
 
   name        = join("_", [each.value.SWITCH_NODE_ID, "INTPROF"]) #INT
   description = each.value.SNOW_RECORD                            #STRING
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 }
 
 resource "aci_access_switch_policy_group" "localAciFabricAccessLeafSwitchPolicyGroupIteration" {
@@ -26,7 +26,7 @@ resource "aci_access_switch_policy_group" "localAciFabricAccessLeafSwitchPolicyG
 
   name        = join("_", [each.value.SWITCH_NODE_ID, "SWPOLGRP"]) #INT
   description = each.value.SNOW_RECORD                             #STRING
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   relation_infra_rs_bfd_ipv4_inst_pol                    = "uni/infra/bfdIpv4Inst-default"
   relation_infra_rs_bfd_ipv6_inst_pol                    = "uni/infra/bfdIpv6Inst-default"
@@ -52,7 +52,7 @@ resource "aci_leaf_profile" "localAciFabricAccessLeafSwitchProfileIteration" {
 
   name        = join("_", [each.value.SWITCH_NODE_ID, "SWPROF"]) #INT
   description = each.value.SNOW_RECORD                           #STRING
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   leaf_selector {
     name                    = join("_", [each.value.SWITCH_NODE_ID, "LFSEL"]) #INT
@@ -102,7 +102,7 @@ resource "aci_vpc_domain_policy" "localAciVpcDomainPolicyIteration" {
   for_each = local.UniqueVpcPeerGroupId
 
   name       = join("_", [each.key, "VDP"]) #INT
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
   dead_intvl = "200" #Default:200
 }
 
@@ -110,7 +110,7 @@ resource "aci_vpc_explicit_protection_group" "localAciVpcExplictProtectionGroupI
   for_each = local.UniqueVpcPeerGroupId
 
   name                             = join("_", [each.key, "VEPG"]) #INT
-  annotation                       = "ORCHESTRATOR:TERRAFORM"
+  annotation                       = "orchestrator:terraform"
   switch1                          = split("-", each.key)[0]
   switch2                          = split("-", each.key)[1]
   vpc_domain_policy                = aci_vpc_domain_policy.localAciVpcDomainPolicyIteration[each.key].name
@@ -125,7 +125,7 @@ resource "aci_static_node_mgmt_address" "localAciStaticNodeMgmtAddrIteration" {
   type              = "out_of_band"
   description       = each.value.SNOW_RECORD #STRING
   addr              = each.value.NODE_MGMT_ADDR
-  annotation        = "ORCHESTRATOR:TERRAFORM"
+  annotation        = "orchestrator:terraform"
   gw                = each.value.NODE_MGMT_GW
 }
 
@@ -134,7 +134,7 @@ resource "aci_node_mgmt_epg" "localAciNodeMgmtOobEPG" {
   management_profile_dn      = "uni/tn-mgmt/mgmtp-default"
   description                = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Endpoint Group."
   name                       = "TF_MGD_NODE_OOB_EPG"
-  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  annotation                 = "orchestrator:terraform"
   relation_mgmt_rs_oo_b_prov = [aci_rest_managed.localAciNodeMgmtOobCtr.dn]
 }
 
@@ -144,7 +144,7 @@ resource "aci_rest_managed" "localAciNodeMgmtOobCtr" {
   content = {
     name  = "TF_MGD_NODE_OOB_CTR"
     descr = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract."
-    #annotation = "ORCHESTRATOR:TERRAFORM" #commented this out because it greated noise - Trevor Patch
+    #annotation = "orchestrator:terraform" #commented this out because it greated noise - Trevor Patch
     intent     = "install"
     prio       = "unspecified"
     scope      = "context"
@@ -156,7 +156,7 @@ resource "aci_contract_subject" "localAciNodeMgmtOobCtrSubj" {
   contract_dn   = aci_rest_managed.localAciNodeMgmtOobCtr.id
   description   = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract Subject."
   name          = "TF_MGD_NODE_OOB_CTR_SUBJ"
-  annotation    = "ORCHESTRATOR:TERRAFORM"
+  annotation    = "orchestrator:terraform"
   rev_flt_ports = "yes"
 }
 
@@ -168,7 +168,7 @@ resource "aci_filter" "localAciNodeMgmtOobCtrSubjFilt" {
   tenant_dn   = data.aci_tenant.dataLocalAciTenantMgmt.id
   description = "Author: Trevor Patch, Terraform Managed Node Out-of-Band Interface Contract Subject Filter."
   name        = "TF_MGD_NODE_OOB_CTR_SUBJ_FILT"
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 }
 
 resource "aci_contract_subject_filter" "localAciNodeMgmtOobCtrSubjFiltAssoc" {
@@ -323,7 +323,7 @@ resource "aci_maintenance_policy" "localACIOddSpinesmaintMaintP" {
   name                   = "ODD_SPINES_MNTPOL"
   admin_st               = "triggered"
   description            = "This Maintenance Policy Defines the Firmware/Software Version for Odd Numbered Spines"
-  annotation             = "ORCHESTRATOR:TERRAFORM"
+  annotation             = "orchestrator:terraform"
   graceful               = "yes"
   ignore_compat          = "yes"
   notif_cond             = "notifyNever"
@@ -337,7 +337,7 @@ resource "aci_maintenance_policy" "localACIOddSpinesmaintMaintP" {
 resource "aci_pod_maintenance_group" "localACIOddSpinesmaintMaintGrp" {
   name                       = "ODD_SPINES_MNTGRP"
   description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIOddSpinesmaintMaintP.name}."
-  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  annotation                 = "orchestrator:terraform"
   fwtype                     = "switch"
   pod_maintenance_group_type = "range"
 
@@ -349,7 +349,7 @@ resource "aci_maintenance_group_node" "localACIOddSpinesmaintMaintGrpNodeBlkIter
 
   name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
   description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIOddSpinesmaintMaintGrp.name}."
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   from_       = each.value.SWITCH_NODE_ID
   to_         = each.value.SWITCH_NODE_ID
 
@@ -383,7 +383,7 @@ resource "aci_maintenance_policy" "localACIEvenSpinesmaintMaintP" {
   name                   = "EVEN_SPINES_MNTPOL"
   admin_st               = "triggered"
   description            = "This Maintenance Policy Defines the Firmware/Software Version for Even Numbered Spines"
-  annotation             = "ORCHESTRATOR:TERRAFORM"
+  annotation             = "orchestrator:terraform"
   graceful               = "yes"
   ignore_compat          = "yes"
   notif_cond             = "notifyNever"
@@ -397,7 +397,7 @@ resource "aci_maintenance_policy" "localACIEvenSpinesmaintMaintP" {
 resource "aci_pod_maintenance_group" "localACIEvenSpinesmaintMaintGrp" {
   name                       = "EVEN_SPINES_MNTGRP"
   description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIEvenSpinesmaintMaintP.name}."
-  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  annotation                 = "orchestrator:terraform"
   fwtype                     = "switch"
   pod_maintenance_group_type = "range"
 
@@ -409,7 +409,7 @@ resource "aci_maintenance_group_node" "localACIEvenSpinesmaintMaintGrpNodeBlkIte
 
   name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
   description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIEvenSpinesmaintMaintGrp.name}."
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   from_       = each.value.SWITCH_NODE_ID
   to_         = each.value.SWITCH_NODE_ID
 
@@ -444,7 +444,7 @@ resource "aci_maintenance_policy" "localACIOddLeafmaintMaintP" {
   name                   = "ODD_Leaf_MNTPOL"
   admin_st               = "triggered"
   description            = "This Maintenance Policy Defines the Firmware/Software Version for Odd Numbered Leaf"
-  annotation             = "ORCHESTRATOR:TERRAFORM"
+  annotation             = "orchestrator:terraform"
   graceful               = "yes"
   ignore_compat          = "yes"
   notif_cond             = "notifyNever"
@@ -458,7 +458,7 @@ resource "aci_maintenance_policy" "localACIOddLeafmaintMaintP" {
 resource "aci_pod_maintenance_group" "localACIOddLeafmaintMaintGrp" {
   name                       = "ODD_Leaf_MNTGRP"
   description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIOddLeafmaintMaintP.name}."
-  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  annotation                 = "orchestrator:terraform"
   fwtype                     = "switch"
   pod_maintenance_group_type = "range"
 
@@ -470,7 +470,7 @@ resource "aci_maintenance_group_node" "localACIOddLeafmaintMaintGrpNodeBlkIterat
 
   name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
   description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIOddLeafmaintMaintGrp.name}."
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   from_       = each.value.SWITCH_NODE_ID
   to_         = each.value.SWITCH_NODE_ID
 
@@ -504,7 +504,7 @@ resource "aci_maintenance_policy" "localACIEvenLeafmaintMaintP" {
   name                   = "EVEN_Leaf_MNTPOL"
   admin_st               = "triggered"
   description            = "This Maintenance Policy Defines the Firmware/Software Version for Even Numbered Leaf"
-  annotation             = "ORCHESTRATOR:TERRAFORM"
+  annotation             = "orchestrator:terraform"
   graceful               = "yes"
   ignore_compat          = "yes"
   notif_cond             = "notifyNever"
@@ -518,7 +518,7 @@ resource "aci_maintenance_policy" "localACIEvenLeafmaintMaintP" {
 resource "aci_pod_maintenance_group" "localACIEvenLeafmaintMaintGrp" {
   name                       = "EVEN_Leaf_MNTGRP"
   description                = "Associated with Maintenance Policy ${aci_maintenance_policy.localACIEvenLeafmaintMaintP.name}."
-  annotation                 = "ORCHESTRATOR:TERRAFORM"
+  annotation                 = "orchestrator:terraform"
   fwtype                     = "switch"
   pod_maintenance_group_type = "range"
 
@@ -530,7 +530,7 @@ resource "aci_maintenance_group_node" "localACIEvenLeafmaintMaintGrpNodeBlkItera
 
   name        = join("_", ["MaintGrpNodeBlk", each.value.SWITCH_NODE_ID])
   description = "Associated with Maintenance Group ${aci_pod_maintenance_group.localACIEvenLeafmaintMaintGrp.name}."
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   from_       = each.value.SWITCH_NODE_ID
   to_         = each.value.SWITCH_NODE_ID
 
@@ -549,14 +549,14 @@ resource "aci_leaf_interface_profile" "localAciFabricAccessLeafVPCInterfaceProfi
   for_each   = local.UniqueVpcPeerGroupId
 
   name       = join("_", [each.key, "INTPROF"]) #INT
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
 }
 
 resource "aci_leaf_profile" "localAciFabricAccessLeafVPCSwitchProfileIteration" {
   for_each                     = local.UniqueVpcPeerGroupId
 
   name                         = join("_", [each.key, "SWPROF"]) #INT
-  annotation                   = "ORCHESTRATOR:TERRAFORM"
+  annotation                   = "orchestrator:terraform"
 
   leaf_selector {
     name                       = join("_", [each.key, "LFSEL"])  #INT

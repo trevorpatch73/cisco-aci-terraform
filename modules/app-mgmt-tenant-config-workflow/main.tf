@@ -29,7 +29,7 @@ resource "aci_tenant" "localAciTenantIteration" {
 
   name        = each.value
   description = join(" ", [each.value, "tenant was created via Terraform from a CI/CD Pipeline."])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   depends_on = [
     null_resource.GlobalFabricVlanUniquenessCheckerPython,
@@ -55,7 +55,7 @@ resource "aci_application_profile" "localAciTenantApplicationProfileIteration" {
 
   tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   name        = each.value.APPLICATION_PROFILE_NAME
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = join(" ", [each.value.APPLICATION_PROFILE_NAME, "application profile was created as a macro-segmentation zone via Terraform from a CI/CD Pipeline."])
 
   depends_on = [
@@ -69,7 +69,7 @@ resource "aci_bridge_domain" "localAciTenantBridgeDomainIteration" {
 
   tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   name        = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "BD"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "bridge domain was created as a NCI Mode VLAN for a segmentation zone via Terraform from a CI/CD Pipeline."])
 
   optimize_wan_bandwidth      = "no"
@@ -107,7 +107,7 @@ resource "aci_subnet" "localAciTenantBridgeDomainSubnet" {
   parent_dn   = aci_bridge_domain.localAciTenantBridgeDomainIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
   description = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "subnet was created as a NCI Mode VLAN for a segmentation zone via Terraform from a CI/CD Pipeline."])
   ip          = "${each.value.GW_IP}/${each.value.MASK}"
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   ctrl        = each.value.BD_FLOOD == "true" ? ["querier", "nd"] : ["unspecified"]
   scope       = ["private"]
   virtual     = "no"
@@ -124,7 +124,7 @@ resource "aci_vrf" "localAciTenantApplicationProfileVrfIteration" {
   tenant_dn              = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   name                   = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF"])
   description            = join(" ", [each.value.MACRO_SEGMENTATION_ZONE, " VRF was created as a macro-segmentation zone via Terraform from a CI/CD Pipeline."])
-  annotation             = "ORCHESTRATOR:TERRAFORM"
+  annotation             = "orchestrator:terraform"
   bd_enforced_enable     = "yes"
   ip_data_plane_learning = "enabled"
   knw_mcast_act          = "permit"
@@ -142,7 +142,7 @@ resource "aci_vrf_snmp_context" "localAciTenantApplicationProfileVrfSnmpIteratio
 
   vrf_dn     = aci_vrf.localAciTenantApplicationProfileVrfIteration[each.key].id
   name       = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "SNMP"])
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
 
   depends_on = [
     null_resource.GlobalFabricVlanUniquenessCheckerPython,
@@ -163,7 +163,7 @@ resource "aci_vrf_snmp_context_community" "localAciTenantApplicationProfileVrfSn
     replace(each.value.MACRO_SEGMENTATION_ZONE, "_", "-"),
     "VRF created via Terraform CI/CD"
   ])
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
 
   depends_on = [
     null_resource.GlobalFabricVlanUniquenessCheckerPython,
@@ -178,7 +178,7 @@ resource "aci_application_epg" "localAciTenantApplicationEndpointGroupIteration"
   application_profile_dn = aci_application_profile.localAciTenantApplicationProfileIteration["${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
   name                   = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "aEPG"])
   description            = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "epg was created as a NCI Mode segmentation zone via Terraform from a CICD."])
-  annotation             = "ORCHESTRATOR:TERRAFORM"
+  annotation             = "orchestrator:terraform"
   flood_on_encap         = "disabled"
   fwd_ctrl               = "none"
   has_mcast_source       = "no"
@@ -203,7 +203,7 @@ resource "aci_contract" "localAciTenantAppEpgInboundContractIteration" {
   tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   description = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "inbound contract epg was created as a NCI Mode segmentation zone via Terraform from a CICD."])
   name        = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "IN", "CTR"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   prio        = "unspecified"
   scope       = "context"
   target_dscp = "unspecified"
@@ -220,7 +220,7 @@ resource "aci_contract_subject" "localAciTenantAppEpgInboundContractSubjectItera
   contract_dn   = aci_contract.localAciTenantAppEpgInboundContractIteration[each.key].id
   description   = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "inbound contract epg was created as a NCI Mode segmentation zone via Terraform from a CICD."])
   name          = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "IN", "CTR", "SUBJ"])
-  annotation    = "ORCHESTRATOR:TERRAFORM"
+  annotation    = "orchestrator:terraform"
   cons_match_t  = "AtleastOne"
   prio          = "unspecified"
   prov_match_t  = "AtleastOne"
@@ -254,7 +254,7 @@ resource "aci_epg_to_contract" "localAciTenantAppEpgInboundCtrAssocIteration" {
   application_epg_dn = aci_application_epg.localAciTenantApplicationEndpointGroupIteration[each.key].id
   contract_dn        = aci_contract.localAciTenantAppEpgInboundContractIteration[each.key].id
   contract_type      = "provider"
-  annotation         = "ORCHESTRATOR:TERRAFORM"
+  annotation         = "orchestrator:terraform"
   match_t            = "AtleastOne"
   prio               = "unspecified"
 
@@ -270,7 +270,7 @@ resource "aci_contract" "localAciTenantAppEpgOutboundContractIteration" {
   tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   description = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "outbound contract epg was created as a NCI Mode segmentation zone via Terraform from a CICD."])
   name        = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "OUT", "CTR"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   prio        = "unspecified"
   scope       = "context"
   target_dscp = "unspecified"
@@ -287,7 +287,7 @@ resource "aci_contract_subject" "localAciTenantAppEpgOutboundContractSubjectIter
   contract_dn   = aci_contract.localAciTenantAppEpgOutboundContractIteration[each.key].id
   description   = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "outbound contract epg was created as a NCI Mode segmentation zone via Terraform from a CICD."])
   name          = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "OUT", "CTR", "SUBJ"])
-  annotation    = "ORCHESTRATOR:TERRAFORM"
+  annotation    = "orchestrator:terraform"
   cons_match_t  = "AtleastOne"
   prio          = "unspecified"
   prov_match_t  = "AtleastOne"
@@ -321,7 +321,7 @@ resource "aci_epg_to_contract" "localAciTenantAppEpgOutboundCtrAssocIteration" {
   application_epg_dn = aci_application_epg.localAciTenantApplicationEndpointGroupIteration[each.key].id
   contract_dn        = aci_contract.localAciTenantAppEpgOutboundContractIteration[each.key].id
   contract_type      = "consumer"
-  annotation         = "ORCHESTRATOR:TERRAFORM"
+  annotation         = "orchestrator:terraform"
   prio               = "unspecified"
 
   depends_on = [
@@ -336,7 +336,7 @@ resource "aci_filter" "localAciTenantContractFiltersIteration" {
   tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   description = join(" ", ["Allows", each.value.PROTOCOL, each.value.PORT, "as specified by Terraform CI/CD Pipeline for EPGs"])
   name        = join("_", [each.value.TENANT_NAME, upper(each.value.PROTOCOL), each.value.PORT, "FILT"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   depends_on = [
     null_resource.GlobalFabricVlanUniquenessCheckerPython,
@@ -350,7 +350,7 @@ resource "aci_filter_entry" "localAciTenantContractFilterEntriesIteration" {
   filter_dn   = aci_filter.localAciTenantContractFiltersIteration[each.key].id
   description = join(" ", ["Allows", each.value.PROTOCOL, each.value.PORT, "as specified by Terraform CI/CD Pipeline for EPGs"])
   name        = join("_", [each.value.TENANT_NAME, "ALLOW", upper(each.value.PROTOCOL), each.value.PORT])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   ether_t     = "ipv4"
   prot        = each.value.PROTOCOL
@@ -369,7 +369,7 @@ resource "aci_vlan_pool" "localAciTenantPhyDomVlanPoolIteration" {
 
   name        = join("_", [each.value, "PHYS-DOM", "VLAN-POOL"])
   description = join(" ", [each.value, " tenant VLAN Pool was created in a NCI Mode via Terraform from a CI/CD Pipeline."])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   alloc_mode  = "static"
 
   depends_on = [
@@ -381,7 +381,7 @@ resource "aci_vlan_pool" "localAciTenantPhyDomVlanPoolIteration" {
 resource "aci_ranges" "localAciTenantPhyDomVlanPoolRangesIteration" {
   for_each = local.network_centric_epgs_bds_list
 
-  annotation   = "ORCHESTRATOR:TERRAFORM"
+  annotation   = "orchestrator:terraform"
   description  = join(" ", [each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "bridge domain was created as a NCI Mode VLAN for a segmentation zone via Terraform from a CI/CD Pipeline."])
   vlan_pool_dn = aci_vlan_pool.localAciTenantPhyDomVlanPoolIteration[each.value.TENANT_NAME].id
   from         = "vlan-${each.value.VLAN_ID}"
@@ -399,7 +399,7 @@ resource "aci_physical_domain" "localAciTenantPhysicalDomainIteration" {
   for_each = local.distinct_tenants
 
   name                      = join("_", [each.value, "PHYS-DOM"])
-  annotation                = "ORCHESTRATOR:TERRAFORM"
+  annotation                = "orchestrator:terraform"
   relation_infra_rs_vlan_ns = aci_vlan_pool.localAciTenantPhyDomVlanPoolIteration[each.key].id
 
 
@@ -415,7 +415,7 @@ resource "aci_epg_to_domain" "localAciTenantEpgPhysDomAssocIteration" {
   application_epg_dn = aci_application_epg.localAciTenantApplicationEndpointGroupIteration[each.key].id
   tdn                = aci_physical_domain.localAciTenantPhysicalDomainIteration[each.value.TENANT_NAME].id
 
-  annotation            = "ORCHESTRATOR:TERRAFORM"
+  annotation            = "orchestrator:terraform"
   binding_type          = "none"
   allow_micro_seg       = "false"
   encap                 = "vlan-${each.value.VLAN_ID}"
@@ -444,7 +444,7 @@ resource "aci_attachable_access_entity_profile" "localAciTenantAttachableEntityA
 
   name                    = join("_", [each.value, "AAEP"])
   description             = join(" ", [each.value, " AAEP allows access to the associated tenant Physical Domain in a NCI Mode via Terraform from a CI/CD Pipeline."])
-  annotation              = "ORCHESTRATOR:TERRAFORM"
+  annotation              = "orchestrator:terraform"
   relation_infra_rs_dom_p = [aci_physical_domain.localAciTenantPhysicalDomainIteration[each.key].id]
 
   depends_on = [
@@ -456,7 +456,7 @@ resource "aci_attachable_access_entity_profile" "localAciTenantAttachableEntityA
 resource "aci_attachable_access_entity_profile" "localAciGlobalAttachableEntityAccessProfileIteration" {
   name        = "GLOBAL_AAEP"
   description = "Global AAEP for all tenants"
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   relation_infra_rs_dom_p = values(aci_physical_domain.localAciTenantPhysicalDomainIteration)[*].id
 
@@ -471,7 +471,7 @@ resource "aci_vlan_pool" "localAciTenantL3ExtVlanPoolIteration" {
 
   name        = join("_", [each.value, "L3-EXT", "VLAN-POOL"])
   description = join(" ", [each.value, " tenant L3Out VLAN Pool was created in a NCI Mode via Terraform from a CI/CD Pipeline."])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   alloc_mode  = "static"
 
   depends_on = [
@@ -483,7 +483,7 @@ resource "aci_vlan_pool" "localAciTenantL3ExtVlanPoolIteration" {
 resource "aci_ranges" "localAciTenantL3ExtVlanPoolRangesIteration" {
   for_each = local.network_centric_epgs_bds_list
 
-  annotation   = "ORCHESTRATOR:TERRAFORM"
+  annotation   = "orchestrator:terraform"
   description  = join(" ", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "L3Out Transit VLAN was created segmentation zone via Terraform"])
   vlan_pool_dn = aci_vlan_pool.localAciTenantL3ExtVlanPoolIteration[each.value.TENANT_NAME].id
   from         = "vlan-${each.value.TRANSIT_VLAN_ID}"
@@ -501,7 +501,7 @@ resource "aci_l3_domain_profile" "localAciTenantL3ExternalDomainIteration" {
   for_each = local.distinct_tenants
 
   name                      = join("_", [each.value, "L3OUT-DOM"])
-  annotation                = "ORCHESTRATOR:TERRAFORM"
+  annotation                = "orchestrator:terraform"
   relation_infra_rs_vlan_ns = aci_vlan_pool.localAciTenantL3ExtVlanPoolIteration[each.key].id
 
 
@@ -517,7 +517,7 @@ resource "aci_l3_outside" "localAciTenantAppProfVrfL3OutProfNgfwIteration" {
   tenant_dn                     = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
   name                          = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT"])
   description                   = join(" ", [each.value.MACRO_SEGMENTATION_ZONE, "L3Out routes to the Tenant NGFW as part of a macro-segmentation zone via Terraform."])
-  annotation                    = "ORCHESTRATOR:TERRAFORM"
+  annotation                    = "orchestrator:terraform"
   enforce_rtctrl                = ["export"]
   target_dscp                   = "unspecified"
   mpls_enabled                  = "no"
@@ -537,7 +537,7 @@ resource "aci_external_network_instance_profile" "localAciTenantAppProfVrfL3OutE
   
   l3_outside_dn   = aci_l3_outside.localAciTenantAppProfVrfL3OutProfNgfwIteration[each.key].id
   name            = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT-EPG"])
-  annotation      = "ORCHESTRATOR:TERRAFORM"  
+  annotation      = "orchestrator:terraform"  
   flood_on_encap  = "disabled"
   match_t         = "AtleastOne"
   pref_gr_memb    = "exclude"
@@ -556,5 +556,5 @@ resource "aci_l3_ext_subnet" "localAciTenantAppProfVrfL3OutEpgSnetNgfwIteration"
   external_network_instance_profile_dn  = aci_external_network_instance_profile.localAciTenantAppProfVrfL3OutEpgNgfwIteration[each.key].id
   description                           = "Deafult Route Out of Macro-Segmentation Zone"
   ip                                    = "0.0.0.0/0"
-  annotation                            = "ORCHESTRATOR:TERRAFORM" 
+  annotation                            = "orchestrator:terraform" 
 }  

@@ -6,8 +6,15 @@ export TF_VAR_CISCO_ACI_TERRAFORM_USERNAME=admin
 export TF_VAR_CISCO_ACI_TERRAFORM_PASSWORD='!v3G@!4@Y'
 export TF_VAR_CISCO_ACI_APIC_IP_ADDRESS='https://sandboxapicdc.cisco.com'
 
+Pipeline Command Order:
+python ./scripts/autogen-endpoint-vpc-config.py
+
+git config --global user.name "CI Bot"
+git config --global user.email "ci-bot@example.com"
+git add .
+git commit -m "Ran CI Python Scripts"
+git push origin HEAD:branch-name
+
 terraform init
-terraform plan -target=module.endpoint-switchport-configuration-workflow.null_resource.AutogenEndpointVpcConfigPython
 terraform plan
-terraform apply -target=module.endpoint-switchport-configuration-workflow.null_resource.AutogenEndpointVpcConfigPython --auto-approve
 terraform apply --auto-approve

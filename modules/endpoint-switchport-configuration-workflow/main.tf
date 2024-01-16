@@ -1,31 +1,3 @@
-######### DEPENDENCIES #########
-resource "null_resource" "AutogenEndpointVpcConfigPython" {
-  provisioner "local-exec" {
-    command     = "python3 autogen-endpoint-vpc-config.py"
-    working_dir = "${path.root}/scripts"
-  }
-
-  triggers = {
-    csv_hash = filemd5("${path.root}/data/endpoint-switchport-configuration.csv")
-  }
-}
-
-data "local_file" "localFileAutogenTenantEndpointVpcConfigPython" {
-  filename   = "./data/autogen-tenant-endpoint-vpc-config.csv"
-  
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
-}
-
-data "local_file" "localFileAutogenGlobalEndpointVpcConfigPython" {
-  filename   = "./data/autogen-global-endpoint-vpc-config.csv"
-  
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
-}
-
 ######### IMPORTS #########
 
 data "aci_attachable_access_entity_profile" "dataLocalAciAttachableEntityProfileIteration" {
@@ -33,17 +5,11 @@ data "aci_attachable_access_entity_profile" "dataLocalAciAttachableEntityProfile
     
     name  = join("_", [each.value, "AAEP"])
     
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
 }
 
 data "aci_attachable_access_entity_profile" "dataLocalAciGobalAAEP" {
     name  = "GLOBAL_AAEP"
     
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
 }
 
 data "aci_leaf_interface_profile" "dataLocalAciFabricAccessLeafInterfaceProfileIteration" {
@@ -51,9 +17,6 @@ data "aci_leaf_interface_profile" "dataLocalAciFabricAccessLeafInterfaceProfileI
   
   name      = join("_", [each.value, "INTPROF"])
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
 }
 
 data "aci_tenant" "dataLocalAciTenantIteration" {
@@ -61,9 +24,6 @@ data "aci_tenant" "dataLocalAciTenantIteration" {
     
   name     = each.value
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]  
 }
 
 data "aci_application_profile" "dataLocalAciTenantApplicationProfileIteration" {
@@ -72,9 +32,6 @@ data "aci_application_profile" "dataLocalAciTenantApplicationProfileIteration" {
   tenant_dn  = data.aci_tenant.dataLocalAciTenantIteration["${each.value.TENANT_NAME}"].id
   name       = each.value.MACRO_SEGMENTATION_ZONE
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]  
 }
 
 data "aci_application_epg" "dataLocalAciTenantApplicationEndpointGroupIteration" {
@@ -83,9 +40,13 @@ data "aci_application_epg" "dataLocalAciTenantApplicationEndpointGroupIteration"
   application_profile_dn  = data.aci_application_profile.dataLocalAciTenantApplicationProfileIteration["${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
   name                    = join("_", ["VLAN", each.value.VLAN_ID, each.value.TENANT_NAME, each.value.APPLICATION_NAME, each.value.MACRO_SEGMENTATION_ZONE, "aEPG"])
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]  
+}
+
+data "aci_l3_outside" "dataLocalAciTenantAppProfVrfL3OutProfNgfwIteration" {
+  for_each  = local.ExternalOutside_Map
+  
+  tenant_dn = data.aci_tenant.dataLocalAciTenantIteration["${each.value.TENANT_NAME}"].id
+  name      = join("_", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT"])
 }
 
 ######### POLICIES #########
@@ -93,15 +54,13 @@ data "aci_application_epg" "dataLocalAciTenantApplicationEndpointGroupIteration"
 resource "aci_lacp_policy" "localAciLacpActivePolicy" {
   name        = "LACP_ACTIVE"
   description = "ACI Nodes actively sends LACP packets to negotiate automatic bundling of links"
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   ctrl        = ["susp-individual", "load-defer", "graceful-conv"]
   max_links   = "16"
   min_links   = "1"
   mode        = "active"
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]  
+  
 }
 
 ######### GLOBAL #########
@@ -112,11 +71,9 @@ resource "aci_access_port_selector" "localAciPhysInterfaceSelectorIteration" {
   leaf_interface_profile_dn = data.aci_leaf_interface_profile.dataLocalAciFabricAccessLeafInterfaceProfileIteration[each.value.ACI_NODE_ID].id
   name                      = join("_", ["Eth", each.value.ACI_NODE_SLOT, each.value.ACI_NODE_PORT])
   access_port_selector_type = "range"
-  annotation                = "ORCHESTRATOR:TERRAFORM"
+  annotation                = "orchestrator:terraform"
 
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
+
   
   lifecycle {
     ignore_changes = [relation_infra_rs_acc_base_grp]
@@ -128,15 +85,13 @@ resource "aci_access_port_block" "localAciPhysInterfaceSelectorPortBlockIteratio
 
   access_port_selector_dn           = aci_access_port_selector.localAciPhysInterfaceSelectorIteration[each.key].id
   name                              = join("_", ["Eth", each.value.ACI_NODE_SLOT, each.value.ACI_NODE_PORT])
-  annotation                        = "ORCHESTRATOR:TERRAFORM"
+  annotation                        = "orchestrator:terraform"
   from_card                         = "${each.value.ACI_NODE_SLOT}"
   from_port                         = "${each.value.ACI_NODE_PORT}"
   to_card                           = "${each.value.ACI_NODE_SLOT}"
   to_port                           = "${each.value.ACI_NODE_PORT}"
 
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
+
   
   lifecycle {
     ignore_changes = [
@@ -163,9 +118,7 @@ resource "aci_rest" "localAciRestPhysIntSelectDescIteration" {
 }
 EOF
 
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
+
 
 }
 
@@ -176,14 +129,12 @@ resource "aci_leaf_access_port_policy_group" "localAciTenantPhysAccessPortPolicy
   
   name        = join("_",[each.value.TENANT_NAME, each.value.ENDPOINT_MAKE, each.value.ENDPOINT_MODEL, each.value.ENDPOINT_OS, "INT_POL_GRP"])
   description = join(" ",["Affects all", each.value.ENDPOINT_MAKE, each.value.ENDPOINT_MODEL, each.value.ENDPOINT_OS, "interface policy settings within tenant", each.value.TENANT_NAME])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciAttachableEntityProfileIteration[each.value.TENANT_NAME].id
 
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]
+
   
 }
 
@@ -205,8 +156,7 @@ EOF
 
   depends_on = [
     aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
-    aci_leaf_access_port_policy_group.localAciTenantPhysAccessPortPolicyGroupIteration,
-    null_resource.AutogenEndpointVpcConfigPython
+    aci_leaf_access_port_policy_group.localAciTenantPhysAccessPortPolicyGroupIteration
   ]  
 
 }
@@ -216,14 +166,12 @@ resource "aci_leaf_access_port_policy_group" "localAciGlobalPhysAccessPortPolicy
   
   name        = join("_",["GLOBAL", each.value.ENDPOINT_MAKE, each.value.ENDPOINT_MODEL, each.value.ENDPOINT_OS, "INT_POL_GRP"])
   description = join(" ",["Affects all", each.value.ENDPOINT_MAKE, each.value.ENDPOINT_MODEL, each.value.ENDPOINT_OS, "interface policy settings across the entire fabric."])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
 
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciGobalAAEP.id
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]  
+  
   
 }
 
@@ -243,9 +191,7 @@ resource "aci_rest" "localAciRestGlobalNonBondIntSelectIntPolAssocIteration" {
 }
 EOF
 
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ] 
+ 
 
 }
 
@@ -254,14 +200,12 @@ resource "aci_epg_to_static_path" "PhysNonBondIntSelectAppEpgStaticBindIteration
 
   application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
   tdn  = "topology/pod-${each.value.ACI_POD_ID}/paths-${each.value.ACI_NODE_ID}/pathep-[eth${each.value.ACI_NODE_SLOT}/${each.value.ACI_NODE_PORT}]"
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]   
+   
   
 }
 
@@ -271,7 +215,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysPortChannelPol
   for_each    = local.TenantPortChannelPolicyGroup_UniqueList
 
   name        = join("_",["PC", each.value.TENANT_NAME, each.value.ENDPOINT_NAME, "BOND", each.value.BOND_GROUP, "INT_POL_GRP"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = "Single Homed Portchannel from Single ACI Node to Multiple NICs on Single Endpoint"
   lag_t       = "link"
 
@@ -281,9 +225,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysPortChannelPol
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]   
+   
   
 }
 
@@ -305,8 +247,7 @@ EOF
 
   depends_on = [
     aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
-    aci_leaf_access_bundle_policy_group.localAciTenantPhysPortChannelPolicyGroup,
-    null_resource.AutogenEndpointVpcConfigPython
+    aci_leaf_access_bundle_policy_group.localAciTenantPhysPortChannelPolicyGroup
   ]  
 
 }
@@ -315,7 +256,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysPortChannelPol
   for_each    = local.GlobalPortChannelPolicyGroup_UniqueList
 
   name        = join("_",["PC", "GLOBAL", each.value.ENDPOINT_NAME, "BOND", each.value.BOND_GROUP, "INT_POL_GRP"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = "Single Homed Portchannel from Single ACI Node to Multiple NICs on Single Endpoint"
   lag_t       = "link"
 
@@ -325,9 +266,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysPortChannelPol
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]  
+  
   
 }
 
@@ -349,8 +288,7 @@ EOF
 
   depends_on = [
     aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
-    aci_leaf_access_bundle_policy_group.localAciGlobalPhysPortChannelPolicyGroup,
-    null_resource.AutogenEndpointVpcConfigPython
+    aci_leaf_access_bundle_policy_group.localAciGlobalPhysPortChannelPolicyGroup
   ]  
 
 }
@@ -361,7 +299,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysVirtualPortCha
   for_each    = local.TenantVirtualPortChannelPolicyGroup_UniqueList
 
   name        = join("_",["VPC", each.value.TENANT_NAME, each.value.ENDPOINT_NAME, "BOND", each.value.BOND_GROUP, "INT_POL_GRP"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = "Dual Homed Portchannel from Two ACI Nodes to Multiple NICs on Single Endpoint"
   lag_t       = "node"
 
@@ -371,9 +309,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysVirtualPortCha
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]    
+    
   
 }
 
@@ -395,8 +331,7 @@ EOF
 
   depends_on = [
     aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
-    aci_leaf_access_bundle_policy_group.localAciTenantPhysVirtualPortChannelPolicyGroup,
-    null_resource.AutogenEndpointVpcConfigPython
+    aci_leaf_access_bundle_policy_group.localAciTenantPhysVirtualPortChannelPolicyGroup
   ]  
 
 }
@@ -407,22 +342,19 @@ resource "aci_epg_to_static_path" "localAciTenantVpcIntSelectEpgAssoc" {
 
   application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
   tdn  = "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciTenantPhysVirtualPortChannelPolicyGroup["${each.value.TENANT_NAME}.${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]"
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython,
-    data.local_file.localFileAutogenTenantEndpointVpcConfigPython
-  ]   
+   
 }
 
 resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortChannelPolicyGroup" {
   for_each    = local.GlobalVirtualPortChannelPolicyGroup_UniqueList
 
   name        = join("_",["VPC", "GLOBAL", each.value.ENDPOINT_NAME, "BOND", each.value.BOND_GROUP, "INT_POL_GRP"])
-  annotation  = "ORCHESTRATOR:TERRAFORM"
+  annotation  = "orchestrator:terraform"
   description = "Dual Homed Portchannel from Two ACI Nodes to Multiple NICs on Single Endpoint"
   lag_t       = "node"
 
@@ -432,9 +364,7 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortCha
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython
-  ]    
+    
   
 }
 
@@ -456,8 +386,7 @@ EOF
 
   depends_on = [
     aci_access_port_selector.localAciPhysInterfaceSelectorIteration,
-    aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup,
-    null_resource.AutogenEndpointVpcConfigPython
+    aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup
   ]
 
 }
@@ -468,13 +397,31 @@ resource "aci_epg_to_static_path" "localAciGlobalVpcIntSelectEpgAssoc" {
 
   application_epg_dn  = data.aci_application_epg.dataLocalAciTenantApplicationEndpointGroupIteration["${each.value.TENANT_NAME}.${each.value.APPLICATION_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}.${each.value.VLAN_ID}"].id
   tdn  = "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciGlobalPhysVirtualPortChannelPolicyGroup["${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]"
-  annotation = "ORCHESTRATOR:TERRAFORM"
+  annotation = "orchestrator:terraform"
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
   
-  depends_on = [
-    null_resource.AutogenEndpointVpcConfigPython,
-    data.local_file.localFileAutogenGlobalEndpointVpcConfigPython
-  ]   
+   
+}
+
+######### L3 Out #########
+
+resource "aci_logical_node_profile" "localAciL3OutNodeProfileIteration" {
+  for_each    = local.GlobalVpcExtOut_NodeMap
+  
+  l3_outside_dn = data.aci_l3_outside.dataLocalAciTenantAppProfVrfL3OutProfNgfwIteration["${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
+  description   = join(" ",["Node Profile for", each.value.ACI_NODE_ID, "as specified by Terraform CICD pipeline."])
+  name          = join("_",[each.value.ACI_NODE_ID, "NODE", "PROF"])
+  annotation    = "orchestrator:terraform"
+  target_dscp   = "unspecified"
+}
+
+resource "aci_logical_node_to_fabric_node" "localAciL3OutNodeProfFabNodeAssocIteration" {
+  for_each    = local.GlobalVpcExtOut_NodeMap
+
+  logical_node_profile_dn   = aci_logical_node_profile.localAciL3OutNodeProfileIteration[each.key].id
+  tdn                       = "topology/pod-1/node-201"
+  annotation                = "orchestrator:terraform"
+  config_issues             = "none"
 }
