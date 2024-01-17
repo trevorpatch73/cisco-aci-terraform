@@ -8,10 +8,9 @@ def read_endpoint_data(file_path):
     with open(file_path, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
-            if all(key in row for key in ['BOND', 'DUAL_HOME', 'MULTI_TENANT', 'ACI_DOMAIN']):
+            if all(key in row for key in ['BOND', 'DUAL_HOME', 'ACI_DOMAIN']):
                 bond_check = row['BOND'].lower() == "true"
                 dual_home_check = row['DUAL_HOME'].lower() == "true"
-                multi_tenant_check = row['MULTI_TENANT'].lower() == "true"
                 aci_domain_check = row['ACI_DOMAIN'].lower() == "l3"
 
                 filtered_data.append(row)

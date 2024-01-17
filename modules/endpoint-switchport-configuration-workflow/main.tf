@@ -392,7 +392,7 @@ resource "aci_epg_to_static_path" "localAciGlobalVpcIntSelectEpgAssoc" {
 ######### L3 Out #########
 
 resource "aci_logical_node_profile" "localAciL3OutNodeProfileIteration" {
-  for_each    = local.GlobalVpcExtOut_NodeMap
+  for_each    = local.ExtNodeProf_Map
   
   l3_outside_dn = data.aci_l3_outside.dataLocalAciTenantAppProfVrfL3OutProfNgfwIteration["${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
   description   = join(" ",["Node Profile for", each.value.ACI_NODE_ID, "as specified by Terraform CICD pipeline."])
@@ -402,10 +402,12 @@ resource "aci_logical_node_profile" "localAciL3OutNodeProfileIteration" {
 }
 
 resource "aci_logical_node_to_fabric_node" "localAciL3OutNodeProfFabNodeAssocIteration" {
-  for_each    = local.GlobalVpcExtOut_NodeMap
+  for_each    = local.ExtNodeProf_Map
 
   logical_node_profile_dn   = aci_logical_node_profile.localAciL3OutNodeProfileIteration[each.key].id
-  tdn                       = "topology/pod-1/node-201"
+  tdn                       = "topology/pod-${each.value.ACI_POD_ID}/node-${each.value.ACI_NODE_ID}"
   annotation                = "orchestrator:terraform"
   config_issues             = "none"
+  rtr_id                    = "${each.value.IP_ADDRESS}"
+  rtr_id_loop_back          = "yes"  
 }

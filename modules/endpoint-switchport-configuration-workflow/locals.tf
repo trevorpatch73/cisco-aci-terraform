@@ -374,23 +374,26 @@ locals {
 
 ######### VIRTUAL PORT-CHANNEL L3 Out #########
 
-  GlobalVpcExtOut_NodeGroupList = [
-    for i in local.iterations : 
-      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_POD_ID}.${i.ACI_NODE_ID}.${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}"
-    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "true" && lower(i.ACI_DOMAIN) == "l3"
+  ExtNodeProf_iterations = csvdecode(file("./data/py-ipam-tenant-fabric-router-ids.csv"))
+  
+  ExtNodeProf_GroupList = [
+    for i in local.ExtNodeProf_iterations : 
+      "${i.IP_ADDRESS}:${i.ACI_POD_ID}:${i.ACI_NODE_ID}:${i.TENANT_NAME}:${i.MACRO_SEGMENTATION_ZONE}"
+    if (lower(i.ACI_NODE_ID) != "open" && lower(i.ACI_NODE_ID) != "available" && lower(i.ACI_NODE_ID) != "unused" && lower(i.ACI_NODE_ID) != "" && lower(i.ACI_NODE_ID) != null) &&
+       (lower(i.ACI_POD_ID) != "open" && lower(i.ACI_POD_ID) != "available" && lower(i.ACI_POD_ID) != "unused" && lower(i.ACI_POD_ID) != "" && lower(i.ACI_POD_ID) != null) &&    
+       (lower(i.TENANT_NAME) != "open" && lower(i.TENANT_NAME) != "available" && lower(i.TENANT_NAME) != "unused" && lower(i.TENANT_NAME) != "" && lower(i.TENANT_NAME) != null) &&
+       (lower(i.MACRO_SEGMENTATION_ZONE) != "open" && lower(i.MACRO_SEGMENTATION_ZONE) != "available" && lower(i.MACRO_SEGMENTATION_ZONE) != "unused"  && lower(i.MACRO_SEGMENTATION_ZONE) != "" && lower(i.MACRO_SEGMENTATION_ZONE) != null)    
   ]
   
-  GlobalVpcExtOut_NodeUniqueList = distinct(local.GlobalVpcExtOut_NodeGroupList)
+  ExtNodeProf_UniqueList = distinct(local.ExtNodeProf_GroupList)
   
-  GlobalVpcExtOut_NodeMap = { for item in local.GlobalVpcExtOut_NodeUniqueList : 
+  ExtNodeProf_Map = { for item in local.ExtNodeProf_UniqueList : 
                   item => {
-                    ENDPOINT_NAME           = split(".", item)[1]
-                    BOND_GROUP              = split(".", item)[2]
-                    ACI_POD_ID              = split(".", item)[3]
-                    ACI_NODE_ID             = split(".", item)[4]
-                    TENANT_NAME             = split(".", item)[5]
-                    MACRO_SEGMENTATION_ZONE = split(".", item)[6]
+                    IP_ADDRESS              = split(":", item)[0]
+                    ACI_POD_ID              = split(":", item)[1]
+                    ACI_NODE_ID             = split(":", item)[2]
+                    TENANT_NAME             = split(":", item)[3]
+                    MACRO_SEGMENTATION_ZONE = split(":", item)[4]
                   }
-                }  
-
+                }   
 }
