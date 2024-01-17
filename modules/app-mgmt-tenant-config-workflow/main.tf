@@ -544,6 +544,9 @@ resource "aci_external_network_instance_profile" "localAciTenantAppProfVrfL3OutE
   prio            = "unspecified"
   target_dscp     = "unspecified"
   
+  relation_fv_rs_prov  = [aci_contract.localAciTenantAppProfVrfL3OutContractIteration[each.key].id]
+  relation_fv_rs_cons  = [aci_contract.localAciTenantAppProfVrfL3OutContractIteration[each.key].id]
+  
   depends_on = [
     null_resource.GlobalFabricVlanUniquenessCheckerPython,
     null_resource.GlobalFabricSubnetUniquenessCheckerPython
@@ -557,4 +560,96 @@ resource "aci_l3_ext_subnet" "localAciTenantAppProfVrfL3OutEpgSnetNgfwIteration"
   description                           = "Deafult Route Out of Macro-Segmentation Zone"
   ip                                    = "0.0.0.0/0"
   annotation                            = "orchestrator:terraform" 
+  
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]  
 }  
+
+resource "aci_contract" "localAciTenantAppProfVrfL3OutContractIteration" {
+  for_each    = local.network_centric_epgs_bds_list
+
+  tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
+  name        = join("_",[each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT-EPG", "CTR"])
+  description = "Defines what communication is allowed to happen in and out of the L3out EPG"
+  annotation  = "orchestrator:terraform" 
+  prio        = "unspecified"
+  scope       = "context"
+  target_dscp = "unspecified"
+  
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]  
+}
+
+resource "aci_contract_subject" "localAciTenantAppProfVrfL3OutContractSubjectIteration" {
+  for_each    = local.network_centric_epgs_bds_list
+
+  contract_dn           = aci_contract.localAciTenantAppProfVrfL3OutContractIteration[each.key].id
+  description           = "Defines what communication is allowed to happen in and out of the L3out EPG"
+  name                  = join("_",[each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "VRF", "NGFW", "L3OUT-EPG", "CTR", "SUBJ"])
+  annotation            = "orchestrator:terraform" 
+  cons_match_t          = "AtleastOne"
+  prio                  = "unspecified"
+  prov_match_t          = "AtleastOne"
+  rev_flt_ports         = "yes"
+  target_dscp           = "unspecified"
+  apply_both_directions = "yes"
+  
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]    
+}
+
+resource "aci_contract_subject_filter" "localAciTenantAppProfVrfL3OutCtrSubjAnyAnyFilterIteration" {
+  for_each    = local.network_centric_epgs_bds_list
+
+  contract_subject_dn   = aci_contract_subject.localAciTenantAppProfVrfL3OutContractSubjectIteration[each.key].id
+  filter_dn             = aci_filter.localAciTenantAnyAnyContractFilterIteration[each.key].id
+  annotation            = "orchestrator:terraform"
+  action                = "permit"
+  directives            = ["log"]
+  priority_override     = "default"
+}
+
+resource "aci_filter" "localAciTenantAnyAnyContractFilterIteration" {
+  for_each    = local.network_centric_epgs_bds_list
+
+  tenant_dn   = aci_tenant.localAciTenantIteration[each.value.TENANT_NAME].id
+  name        = join("_",[each.value.TENANT_NAME, "IP", "ANY", "FILT"])
+  description = "Filter for Any IP traffic"
+  annotation  = "orchestrator:terraform"
+  
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]  
+}
+
+resource "aci_filter_entry" "localAciNodeMgmtOobCtrSubjFiltAllowIpAny" {
+  for_each    = local.network_centric_epgs_bds_list
+
+  filter_dn   = aci_filter.localAciTenantAnyAnyContractFilterIteration[each.key].id
+  annotation  = "orchestrator:terraform"
+  name        = join("_",[each.value.TENANT_NAME, "ALLOW", "IP", "ANY"])
+  apply_to_frag = "yes"
+  arp_opc       = "unspecified"
+  d_from_port   = "unspecified"
+  d_to_port     = "unspecified"
+  ether_t       = "ip"
+  icmpv4_t      = "unspecified"
+  icmpv6_t      = "unspecified"
+  match_dscp    = "unspecified"
+  prot          = "unspecified"
+  s_from_port   = "unspecified"
+  s_to_port     = "unspecified"
+  stateful      = "no"
+  
+  depends_on = [
+    null_resource.GlobalFabricVlanUniquenessCheckerPython,
+    null_resource.GlobalFabricSubnetUniquenessCheckerPython
+  ]  
+}
