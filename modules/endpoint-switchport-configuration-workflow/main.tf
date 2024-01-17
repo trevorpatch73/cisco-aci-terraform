@@ -60,7 +60,6 @@ resource "aci_lacp_policy" "localAciLacpActivePolicy" {
   min_links   = "1"
   mode        = "active"
   
-  
 }
 
 ######### GLOBAL #########
@@ -72,8 +71,6 @@ resource "aci_access_port_selector" "localAciPhysInterfaceSelectorIteration" {
   name                      = join("_", ["Eth", each.value.ACI_NODE_SLOT, each.value.ACI_NODE_PORT])
   access_port_selector_type = "range"
   annotation                = "orchestrator:terraform"
-
-
   
   lifecycle {
     ignore_changes = [relation_infra_rs_acc_base_grp]
@@ -118,8 +115,6 @@ resource "aci_rest" "localAciRestPhysIntSelectDescIteration" {
 }
 EOF
 
-
-
 }
 
 ######### NONBOND L2 PORTS #########
@@ -133,8 +128,6 @@ resource "aci_leaf_access_port_policy_group" "localAciTenantPhysAccessPortPolicy
   
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciAttachableEntityProfileIteration[each.value.TENANT_NAME].id
-
-
   
 }
 
@@ -171,8 +164,6 @@ resource "aci_leaf_access_port_policy_group" "localAciGlobalPhysAccessPortPolicy
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciGobalAAEP.id
   
-  
-  
 }
 
 resource "aci_rest" "localAciRestGlobalNonBondIntSelectIntPolAssocIteration" {
@@ -191,8 +182,6 @@ resource "aci_rest" "localAciRestGlobalNonBondIntSelectIntPolAssocIteration" {
 }
 EOF
 
- 
-
 }
 
 resource "aci_epg_to_static_path" "PhysNonBondIntSelectAppEpgStaticBindIteration" {
@@ -204,8 +193,6 @@ resource "aci_epg_to_static_path" "PhysNonBondIntSelectAppEpgStaticBindIteration
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
-  
-   
   
 }
 
@@ -364,8 +351,6 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortCha
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-    
-  
 }
 
 resource "aci_rest" "localAciRestGlobalVPCIntSelectIntPolAssocIteration" {
@@ -401,7 +386,6 @@ resource "aci_epg_to_static_path" "localAciGlobalVpcIntSelectEpgAssoc" {
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
-  
    
 }
 
