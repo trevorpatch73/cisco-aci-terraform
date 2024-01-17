@@ -73,7 +73,10 @@ resource "aci_access_port_selector" "localAciPhysInterfaceSelectorIteration" {
   annotation                = "orchestrator:terraform"
   
   lifecycle {
-    ignore_changes = [relation_infra_rs_acc_base_grp]
+    ignore_changes = [
+      relation_infra_rs_acc_base_grp,
+      leaf_interface_profile_dn
+    ]
   }  
 }
 
@@ -128,6 +131,10 @@ resource "aci_leaf_access_port_policy_group" "localAciTenantPhysAccessPortPolicy
   
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciAttachableEntityProfileIteration[each.value.TENANT_NAME].id
+
+  lifecycle {
+    ignore_changes = [relation_infra_rs_att_ent_p]
+  }  
   
 }
 
@@ -163,6 +170,10 @@ resource "aci_leaf_access_port_policy_group" "localAciGlobalPhysAccessPortPolicy
 
   #Attachable Access Entity Profile:
   relation_infra_rs_att_ent_p   = data.aci_attachable_access_entity_profile.dataLocalAciGobalAAEP.id
+
+  lifecycle {
+    ignore_changes = [relation_infra_rs_att_ent_p]
+  }  
   
 }
 
@@ -193,6 +204,10 @@ resource "aci_epg_to_static_path" "PhysNonBondIntSelectAppEpgStaticBindIteration
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
+
+  lifecycle {
+    ignore_changes = [application_epg_dn]
+  }  
   
 }
 
@@ -212,7 +227,9 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysPortChannelPol
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-   
+  lifecycle {
+    ignore_changes = [relation_infra_rs_att_ent_p]
+  }     
   
 }
 
@@ -253,7 +270,9 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysPortChannelPol
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-  
+  lifecycle {
+    ignore_changes = [relation_infra_rs_att_ent_p]
+  }    
   
 }
 
@@ -296,7 +315,9 @@ resource "aci_leaf_access_bundle_policy_group" "localAciTenantPhysVirtualPortCha
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
   
-    
+  lifecycle {
+    ignore_changes = [relation_infra_rs_att_ent_p]
+  }       
   
 }
 
@@ -333,7 +354,10 @@ resource "aci_epg_to_static_path" "localAciTenantVpcIntSelectEpgAssoc" {
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
-  
+
+  lifecycle {
+    ignore_changes = [application_epg_dn]
+  }    
    
 }
 
@@ -350,6 +374,10 @@ resource "aci_leaf_access_bundle_policy_group" "localAciGlobalPhysVirtualPortCha
   
   # LACP Policy:
   relation_infra_rs_lacp_pol = aci_lacp_policy.localAciLacpActivePolicy.id
+
+  lifecycle {
+    ignore_changes = [relation_infra_rs_att_ent_p]
+  }  
   
 }
 
@@ -386,11 +414,14 @@ resource "aci_epg_to_static_path" "localAciGlobalVpcIntSelectEpgAssoc" {
   encap  = "vlan-${each.value.VLAN_ID}"
   instr_imedcy = "immediate"
   mode  = lower(each.value.DOT1Q_ENABLE) == "true" ? "regular" : "native"
+
+  lifecycle {
+    ignore_changes = [application_epg_dn]
+  }  
    
 }
 
 ######### L3 Out #########
-
 resource "aci_logical_node_profile" "localAciL3OutNodeProfileIteration" {
   for_each    = local.ExtNodeProf_Map
   
@@ -399,6 +430,10 @@ resource "aci_logical_node_profile" "localAciL3OutNodeProfileIteration" {
   name          = join("_",[each.value.ACI_NODE_ID, "NODE", "PROF"])
   annotation    = "orchestrator:terraform"
   target_dscp   = "unspecified"
+  
+  lifecycle {
+    ignore_changes = [l3_outside_dn]
+  }  
 }
 
 resource "aci_logical_node_to_fabric_node" "localAciL3OutNodeProfFabNodeAssocIteration" {

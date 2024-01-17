@@ -6,6 +6,14 @@ export TF_VAR_CISCO_ACI_TERRAFORM_USERNAME=admin
 export TF_VAR_CISCO_ACI_TERRAFORM_PASSWORD='!v3G@!4@Y'
 export TF_VAR_CISCO_ACI_APIC_IP_ADDRESS='https://sandboxapicdc.cisco.com'
 
+docker run -d --rm -it -p 9000:9000 -v $(pwd):/src -e TF_VAR_CISCO_ACI_TERRAFORM_USERNAME -e TF_VAR_CISCO_ACI_TERRAFORM_PASSWORD -e TF_VAR_CISCO_ACI_APIC_IP_ADDRESS im2nguyen/rover
+
+##################################################################
+
+- py-ipam-tenant-fabric-router-ids.csv requires host ips manually added to the first column, and remaining columns set to "OPEN"
+
+##################################################################
+
 Pipeline Command Order:
 python ./scripts/autogen-endpoint-vpc-config.py
 

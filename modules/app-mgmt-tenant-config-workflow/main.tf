@@ -609,7 +609,7 @@ resource "aci_contract_subject_filter" "localAciTenantAppProfVrfL3OutCtrSubjAnyA
 
   contract_subject_dn   = aci_contract_subject.localAciTenantAppProfVrfL3OutContractSubjectIteration[each.key].id
   filter_dn             = aci_filter.localAciTenantAnyAnyContractFilterIteration[each.key].id
-  annotation            = "orchestrator:terraform"
+  #annotation            = "orchestrator:terraform" #this was causing noise
   action                = "permit"
   directives            = ["log"]
   priority_override     = "default"
