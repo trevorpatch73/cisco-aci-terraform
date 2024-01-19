@@ -87,6 +87,42 @@ locals {
                     MACRO_SEGMENTATION_ZONE = split(".", item)[1]
                   }
                 }                
+
+  ExtInterfaceSelectors_GroupList = {
+    for i in local.iterations : "${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => [i]...
+    if lower(i.ACI_DOMAIN) == "l3"
+  }
+  
+  ExtInterfaceSelectors_FlatList = flatten([
+    for key, items in local.ExtInterfaceSelectors_GroupList : 
+      [{ 
+        ACI_NODE_ID       = items[0][0].ACI_NODE_ID,
+        ACI_NODE_SLOT     = items[0][0].ACI_NODE_SLOT,
+        ACI_NODE_PORT     = items[0][0].ACI_NODE_PORT
+      }]
+  ])
+  
+  ExtInterfaceSelectors_UniqueList = { for idx, i in local.ExtInterfaceSelectors_FlatList : 
+    "${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}" => i 
+  }  
+  
+  ExtIntSelectDesc_GroupList = [
+    for i in local.iterations : 
+      "${i.ENDPOINT_NAME}.${i.ENDPOINT_NIC}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.ACI_DOMAIN) == "l3"
+  ]
+  
+  ExtIntSelectDesc_UniqueList = distinct(local.ExtIntSelectDesc_GroupList)
+ 
+  ExtIntSelectDesc_Map = { for item in local.ExtIntSelectDesc_UniqueList : 
+                  item => {
+                    ENDPOINT_NAME   = split(".", item)[0]
+                    ENDPOINT_NIC    = split(".", item)[1]
+                    ACI_NODE_ID     = split(".", item)[2]
+                    ACI_NODE_SLOT   = split(".", item)[3]
+                    ACI_NODE_PORT   = split(".", item)[4]
+                  }
+                }
                 
 ######### NONBOND L2 PORTS #########
 
@@ -374,26 +410,126 @@ locals {
 
 ######### VIRTUAL PORT-CHANNEL L3 Out #########
 
-  ExtNodeProf_iterations = csvdecode(file("./data/py-ipam-tenant-fabric-router-ids.csv"))
+  TenantExtVirtualPortChannelPolicyGroup_GroupList = {
+    for i in local.iterations : "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => [i]...
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "false" && lower(i.ACI_DOMAIN) == "l3"
+  }
   
-  ExtNodeProf_GroupList = [
-    for i in local.ExtNodeProf_iterations : 
-      "${i.IP_ADDRESS}:${i.ACI_POD_ID}:${i.ACI_NODE_ID}:${i.TENANT_NAME}:${i.MACRO_SEGMENTATION_ZONE}"
-    if (lower(i.ACI_NODE_ID) != "open" && lower(i.ACI_NODE_ID) != "available" && lower(i.ACI_NODE_ID) != "unused" && lower(i.ACI_NODE_ID) != "" && lower(i.ACI_NODE_ID) != null) &&
-       (lower(i.ACI_POD_ID) != "open" && lower(i.ACI_POD_ID) != "available" && lower(i.ACI_POD_ID) != "unused" && lower(i.ACI_POD_ID) != "" && lower(i.ACI_POD_ID) != null) &&    
-       (lower(i.TENANT_NAME) != "open" && lower(i.TENANT_NAME) != "available" && lower(i.TENANT_NAME) != "unused" && lower(i.TENANT_NAME) != "" && lower(i.TENANT_NAME) != null) &&
-       (lower(i.MACRO_SEGMENTATION_ZONE) != "open" && lower(i.MACRO_SEGMENTATION_ZONE) != "available" && lower(i.MACRO_SEGMENTATION_ZONE) != "unused"  && lower(i.MACRO_SEGMENTATION_ZONE) != "" && lower(i.MACRO_SEGMENTATION_ZONE) != null)    
+  TenantExtVirtualPortChannelPolicyGroup_FlatList = flatten([
+    for key, items in local.TenantExtVirtualPortChannelPolicyGroup_GroupList : 
+      [{ 
+        TENANT_NAME           = items[0][0].TENANT_NAME, 
+        ENDPOINT_NAME         = items[0][0].ENDPOINT_NAME,
+        BOND_GROUP            = items[0][0].BOND_GROUP
+      }]
+  ])
+  
+  TenantExtVirtualPortChannelPolicyGroup_UniqueList = { for idx, i in local.TenantExtVirtualPortChannelPolicyGroup_FlatList : 
+    "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
+  }
+  
+  TenantExtVPCIntSelectIntPolAssoc_GroupList = [
+    for i in local.iterations : 
+      "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "false" && lower(i.ACI_DOMAIN) == "l3"
   ]
   
-  ExtNodeProf_UniqueList = distinct(local.ExtNodeProf_GroupList)
+  TenantExtVPCIntSelectIntPolAssoc_UniqueList = distinct(local.TenantExtVPCIntSelectIntPolAssoc_GroupList)
   
-  ExtNodeProf_Map = { for item in local.ExtNodeProf_UniqueList : 
+  TenantExtVPCIntSelectIntPolAssoc_Map = { for item in local.TenantExtVPCIntSelectIntPolAssoc_UniqueList : 
                   item => {
-                    IP_ADDRESS              = split(":", item)[0]
-                    ACI_POD_ID              = split(":", item)[1]
-                    ACI_NODE_ID             = split(":", item)[2]
-                    TENANT_NAME             = split(":", item)[3]
-                    MACRO_SEGMENTATION_ZONE = split(":", item)[4]
+                    TENANT_NAME   = split(".", item)[0]
+                    ENDPOINT_NAME = split(".", item)[1]
+                    BOND_GROUP    = split(".", item)[2]
+                    ACI_NODE_ID   = split(".", item)[3]
+                    ACI_NODE_SLOT = split(".", item)[4]
+                    ACI_NODE_PORT = split(".", item)[5]
                   }
-                }   
+                }  
+  
+  GlobalExtVirtualPortChannelPolicyGroup_GroupList = {
+    for i in local.iterations : "Global.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => [i]...
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "true" && lower(i.ACI_DOMAIN) == "l3"
+  }
+  
+  GlobalExtVirtualPortChannelPolicyGroup_FlatList = flatten([
+    for key, items in local.GlobalExtVirtualPortChannelPolicyGroup_GroupList : 
+      [{ 
+        ENDPOINT_NAME         = items[0][0].ENDPOINT_NAME,
+        BOND_GROUP   = items[0][0].BOND_GROUP
+      }]
+  ])
+  
+  GlobalExtVirtualPortChannelPolicyGroup_UniqueList = { for idx, i in local.GlobalExtVirtualPortChannelPolicyGroup_FlatList : 
+    "${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
+  }    
+  
+  GlobalExtVPCIntSelectIntPolAssoc_GroupList = [
+    for i in local.iterations : 
+      "GLOBAL.${i.ENDPOINT_NAME}.${i.BOND_GROUP}.${i.ACI_NODE_ID}.${i.ACI_NODE_SLOT}.${i.ACI_NODE_PORT}"
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "true" && lower(i.MULTI_TENANT) == "true" && lower(i.ACI_DOMAIN) == "l3"
+  ]
+  
+  GlobalExtVPCIntSelectIntPolAssoc_UniqueList = distinct(local.GlobalExtVPCIntSelectIntPolAssoc_GroupList)
+  
+  GlobalExtVPCIntSelectIntPolAssoc_Map = { for item in local.GlobalExtVPCIntSelectIntPolAssoc_UniqueList : 
+                  item => {
+                    ENDPOINT_NAME = split(".", item)[1]
+                    BOND_GROUP    = split(".", item)[2]
+                    ACI_NODE_ID   = split(".", item)[3]
+                    ACI_NODE_SLOT = split(".", item)[4]
+                    ACI_NODE_PORT = split(".", item)[5]
+                  }
+                }
+
+  TenantExtNodeProfNgfwExtEpgAssoc_Iterations   =   csvdecode(file("./data/autogen-l3out-ngfw-node-profile-config.csv"))
+  
+  TenantExtNodeProfNgfwExtEpgAssoc_List = {
+    for i in local.TenantExtNodeProfNgfwExtEpgAssoc_Iterations :
+    "${i.ODD_NODE_ID}.${i.EVEN_NODE_ID}.${i.ACI_POD_ID}.${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}" => {
+      ODD_NODE_ID               = i.ODD_NODE_ID
+      EVEN_NODE_ID              = i.EVEN_NODE_ID
+      ACI_POD_ID                = i.ACI_POD_ID
+      TENANT_NAME               = i.TENANT_NAME 
+      MACRO_SEGMENTATION_ZONE   = i.MACRO_SEGMENTATION_ZONE
+    }
+  }
+
+  TenantExtNodeProfNgfwFabNodeAssoc_Iterations = csvdecode(file("./data/autogen-l3out-ngfw-nodeprof-fabnode-assoc.csv"))
+  
+  TenantExtNodeProfNgfwFabNodeAssoc_List = {
+    for i in local.TenantExtNodeProfNgfwFabNodeAssoc_Iterations :
+    "${i.ACI_POD_ID}.${i.ODD_NODE_ID}.${i.ODD_NODE_IP}.${i.EVEN_NODE_ID}.${i.EVEN_NODE_IP}.${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.APPLICATION_NAME}" => {
+      ACI_POD_ID                = i.ACI_POD_ID
+      ODD_NODE_ID               = i.ODD_NODE_ID
+      ODD_NODE_IP               = i.ODD_NODE_IP
+      EVEN_NODE_ID              = i.EVEN_NODE_ID
+      EVEN_NODE_IP              = i.EVEN_NODE_IP
+      TENANT_NAME               = i.TENANT_NAME 
+      MACRO_SEGMENTATION_ZONE   = i.MACRO_SEGMENTATION_ZONE
+      APPLICATION_NAME          = i.APPLICATION_NAME
+    }
+  }
+
+  TenantExtNodeProfNgfwPathAssoc_Iterations = csvdecode(file("./data/autogen-l3out-ngfw-vpc-config.csv"))
+  
+  TenantExtNodeProfNgfwPathAssoc_List = {
+    for i in local.TenantExtNodeProfNgfwPathAssoc_Iterations :
+    "${i.ENDPOINT_NAME}:${i.BOND_GROUP}:${i.ODD_NODE_ID}:${i.ODD_NODE_IP}:${i.EVEN_NODE_ID}:${i.EVEN_NODE_IP}:${i.SECONDARY_IP}:${i.MULTI_TENANT}:${i.ACI_POD_ID}:${i.TENANT_NAME}:${i.MACRO_SEGMENTATION_ZONE}:${i.VLAN_ID}" => {
+      ENDPOINT_NAME           = i.ENDPOINT_NAME
+      BOND_GROUP              = i.BOND_GROUP
+      ODD_NODE_ID             = i.ODD_NODE_ID
+      ODD_NODE_IP             = i.ODD_NODE_IP
+      EVEN_NODE_ID            = i.EVEN_NODE_ID
+      EVEN_NODE_IP            = i.EVEN_NODE_IP
+      SECONDARY_IP            = i.SECONDARY_IP
+      MULTI_TENANT            = i.MULTI_TENANT
+      ACI_POD_ID              = i.ACI_POD_ID
+      TENANT_NAME             = i.TENANT_NAME
+      MACRO_SEGMENTATION_ZONE = i.MACRO_SEGMENTATION_ZONE
+      VLAN_ID                 = i.VLAN_ID
+    }
+  }
+
+  
 }

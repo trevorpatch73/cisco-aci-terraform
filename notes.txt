@@ -16,6 +16,10 @@ docker run -d --rm -it -p 9000:9000 -v $(pwd):/src -e TF_VAR_CISCO_ACI_TERRAFORM
 
 Pipeline Command Order:
 python ./scripts/autogen-endpoint-vpc-config.py
+python ./scripts/autogen-l3out-node-profile-config.py
+python ./scripts/autogen-ngfw-l3out-node-rtr-id.py
+python ./scripts/autogen-l3out-ngfw-nodeprof-fabnode-assoc.py
+python ./scripts/autogen-l3out-ngfw-transit-ipam.py 
 
 git config --global user.name "CI Bot"
 git config --global user.email "ci-bot@example.com"

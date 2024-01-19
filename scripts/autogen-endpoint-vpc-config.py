@@ -26,13 +26,13 @@ def tenant_epg_converter():
                        row['TENANT_NAME'], row['APPLICATION_NAME'], row['MACRO_SEGMENTATION_ZONE'], 
                        row['VLAN_ID'], row['ACI_POD_ID'])
     
-                aci_node_id = int(row["ACI_NODE_ID"])  # Convert to integer
-                if aci_node_id % 2 == 0:  # Check if the node ID is even
-                    grouped_data[key]["EVEN_NODE_ID"] = str(aci_node_id)  # Convert back to string
-                else:  # Otherwise, it's odd
-                    grouped_data[key]["ODD_NODE_ID"] = str(aci_node_id)  # Convert back to string
+                aci_node_id = int(row["ACI_NODE_ID"])
+                if aci_node_id % 2 == 0: 
+                    grouped_data[key]["EVEN_NODE_ID"] = str(aci_node_id) 
+                else:
+                    grouped_data[key]["ODD_NODE_ID"] = str(aci_node_id)
     
-    # Write the new CSV file
+
     with open(output_file_path, mode='w', newline='', encoding='utf-8') as outfile:
         fieldnames = ['ENDPOINT_NAME', 'BOND_GROUP', 'ODD_NODE_ID', 'EVEN_NODE_ID', 'ACI_POD_ID', 
                       'DOT1Q_ENABLE', 'TENANT_NAME', 'APPLICATION_NAME', 'MACRO_SEGMENTATION_ZONE', 'VLAN_ID']
@@ -81,13 +81,13 @@ def global_epg_converter():
                        row['TENANT_NAME'], row['APPLICATION_NAME'], row['MACRO_SEGMENTATION_ZONE'], 
                        row['VLAN_ID'], row['ACI_POD_ID'])
     
-                aci_node_id = int(row["ACI_NODE_ID"])  # Convert to integer
-                if aci_node_id % 2 == 0:  # Check if the node ID is even
-                    grouped_data[key]["EVEN_NODE_ID"] = str(aci_node_id)  # Convert back to string
-                else:  # Otherwise, it's odd
-                    grouped_data[key]["ODD_NODE_ID"] = str(aci_node_id)  # Convert back to string
+                aci_node_id = int(row["ACI_NODE_ID"]) 
+                if aci_node_id % 2 == 0:
+                    grouped_data[key]["EVEN_NODE_ID"] = str(aci_node_id)
+                else:  
+                    grouped_data[key]["ODD_NODE_ID"] = str(aci_node_id)
     
-    # Write the new CSV file
+
     with open(output_file_path, mode='w', newline='', encoding='utf-8') as outfile:
         fieldnames = ['ENDPOINT_NAME', 'BOND_GROUP', 'ODD_NODE_ID', 'EVEN_NODE_ID', 'ACI_POD_ID', 
                       'DOT1Q_ENABLE', 'TENANT_NAME', 'APPLICATION_NAME', 'MACRO_SEGMENTATION_ZONE', 'VLAN_ID']

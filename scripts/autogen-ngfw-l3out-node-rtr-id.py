@@ -8,11 +8,12 @@ def read_endpoint_data(file_path):
     with open(file_path, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
-            if all(key in row for key in ['BOND', 'DUAL_HOME', 'ACI_DOMAIN']):
-                bond_check = row['BOND'].lower() == "true"
-                dual_home_check = row['DUAL_HOME'].lower() == "true"
-                aci_domain_check = row['ACI_DOMAIN'].lower() == "l3"
+            bond_check = row['BOND'].lower() == "true"
+            dual_home_check = row['DUAL_HOME'].lower() == "true"
+            aci_domain_check = row['ACI_DOMAIN'].lower() == "l3"
+            application_name_check = row['APPLICATION_NAME'].lower() == "ngfw"
 
+            if bond_check and dual_home_check and aci_domain_check and application_name_check:
                 filtered_data.append(row)
                 
     return filtered_data
@@ -52,7 +53,8 @@ def is_key_already_assigned(ipam_data, key):
             ipam_entry['ACI_NODE_ID'] == key['ACI_NODE_ID'] and
             ipam_entry['TENANT_NAME'] == key['TENANT_NAME'] and
             ipam_entry['MACRO_SEGMENTATION_ZONE'] == key['MACRO_SEGMENTATION_ZONE'] and
-            ipam_entry['IP_ADDRESS']):  # Check if IP_ADDRESS is not empty
+            ipam_entry['APPLICATION_NAME'] == key['APPLICATION_NAME'] and
+            ipam_entry['IP_ADDRESS']):
             return True
     return False
 
@@ -78,7 +80,8 @@ def find_and_update_ipam(data, ipam_data):
                     'ACI_POD_ID': entry['ACI_POD_ID'],
                     'ACI_NODE_ID': entry['ACI_NODE_ID'],
                     'TENANT_NAME': entry['TENANT_NAME'],
-                    'MACRO_SEGMENTATION_ZONE': entry['MACRO_SEGMENTATION_ZONE']
+                    'MACRO_SEGMENTATION_ZONE': entry['MACRO_SEGMENTATION_ZONE'],
+                    'APPLICATION_NAME': entry['APPLICATION_NAME']
                 })
                 ip_address_assigned = True
                 break
