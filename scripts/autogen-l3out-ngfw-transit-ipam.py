@@ -161,12 +161,10 @@ def l3out_ngfw_converter(endpoint_data, output_file_path):
         else:
             grouped_data[key]["ODD_NODE_ID"] = str(aci_node_id)
 
-        # Leave IP addresses blank
         grouped_data[key]['ODD_NODE_IP'] = ''
         grouped_data[key]['EVEN_NODE_IP'] = ''
         grouped_data[key]["SECONDARY_IP"] = ''
 
-        # Include MULTI_TENANT field
         grouped_data[key]["MULTI_TENANT"] = row.get('MULTI_TENANT', '')
 
     with open(output_file_path, mode='w', newline='', encoding='utf-8') as outfile:
@@ -196,46 +194,48 @@ def l3out_ngfw_converter(endpoint_data, output_file_path):
     print(f"CSV file {output_file_path} has been created successfully.")
             
 def assign_ips(input_file, output_file):
+    # Read existing data from the output file
+    existing_data = []
     if os.path.exists(output_file):
         with open(output_file, mode='r', newline='', encoding='utf-8') as file:
             reader = csv.DictReader(file)
-            existing_data = { (row['TENANT_NAME'], row['MACRO_SEGMENTATION_ZONE']): row for row in reader }
-    else:
-        existing_data = {}
+            for row in reader:
+                existing_data.append(row)
+        print("Existing data read from output file.")
 
+    # Read and process input file
     with open(input_file, mode='r', newline='', encoding='utf-8') as infile:
         reader = csv.DictReader(infile)
         for row in reader:
-            key = (row['TENANT_NAME'], row['MACRO_SEGMENTATION_ZONE'])
-            if key in existing_data:
-                node_id = row['ACI_NODE_ID']
+            # Extract CIDR suffix
+            cidr_suffix = row['NETWORK_CIDR'].split('/')[-1]
+            updated_ip_address = f"{row['IP_ADDRESS']}/{cidr_suffix}"
 
-                # Skip the row if ACI_NODE_ID is 'OPEN'
-                if node_id == 'OPEN':
-                    continue
+            for existing_row in existing_data:
+                # Check if the rows match based on key fields
+                if (existing_row['TENANT_NAME'] == row['TENANT_NAME'] and 
+                    existing_row['MACRO_SEGMENTATION_ZONE'] == row['MACRO_SEGMENTATION_ZONE']):
+                    print(f"Found matching row for TENANT_NAME: {row['TENANT_NAME']}, MACRO_SEGMENTATION_ZONE: {row['MACRO_SEGMENTATION_ZONE']}")
+                    if row['ACI_NODE_ID'] == existing_row['ODD_NODE_ID']:
+                        print(f"Updating ODD_NODE_IP for NODE_ID: {row['ACI_NODE_ID']}")
+                        existing_row['ODD_NODE_IP'] = updated_ip_address
+                    elif row['ACI_NODE_ID'] == existing_row['EVEN_NODE_ID']:
+                        print(f"Updating EVEN_NODE_IP for NODE_ID: {row['ACI_NODE_ID']}")
+                        existing_row['EVEN_NODE_IP'] = updated_ip_address
+                    elif row['ACI_NODE_ID'] == existing_row['ODD_NODE_ID'] + "_" + existing_row['EVEN_NODE_ID'] + "_SEC_IP":
+                        print(f"Updating SECONDARY_IP for NODE_ID: {row['ACI_NODE_ID']}")
+                        existing_row['SECONDARY_IP'] = updated_ip_address
 
-                # Extract CIDR suffix from NETWORK_CIDR
-                cidr_suffix = row['NETWORK_CIDR'].split('/')[-1]
-                updated_ip_address = f"{row['IP_ADDRESS']}/{cidr_suffix}"
-
-                if "_SEC_IP" in node_id:
-                    existing_data[key]['SECONDARY_IP'] = updated_ip_address
-                elif node_id.isdigit():
-                    numeric_node_id = int(node_id)
-                    if numeric_node_id % 2 == 0:
-                        existing_data[key]['EVEN_NODE_ID'] = row['ACI_NODE_ID']
-                        existing_data[key]['EVEN_NODE_IP'] = updated_ip_address
-                    else:
-                        existing_data[key]['ODD_NODE_ID'] = row['ACI_NODE_ID']
-                        existing_data[key]['ODD_NODE_IP'] = updated_ip_address
-
+    # Write updated data back to the output file
     with open(output_file, mode='w', newline='', encoding='utf-8') as outfile:
         fieldnames = ['ENDPOINT_NAME','BOND_GROUP','ODD_NODE_ID','ODD_NODE_IP','EVEN_NODE_ID','EVEN_NODE_IP','SECONDARY_IP','MULTI_TENANT','ACI_POD_ID','TENANT_NAME','MACRO_SEGMENTATION_ZONE','VLAN_ID']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
+        writer.writerows(existing_data)
+        print("Updated data written back to the output file.")
 
-        for row in existing_data.values():
-            writer.writerow(row)
+    print("assign_ips function completed.")
+
 
 def main():
     source_ipam_file = './data/app-mgmt-tenant-configuration.csv'

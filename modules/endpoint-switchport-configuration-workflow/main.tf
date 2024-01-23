@@ -596,7 +596,7 @@ resource "aci_l3out_path_attachment" "localAciTenantNgfwL3OutNodeProfIntProfSviV
   for_each  = local.TenantExtNodeProfNgfwPathAssoc_List
 
   logical_interface_profile_dn  = aci_logical_interface_profile.localAciTenantNgfwL3OutNodeProfIntProfIteration["${each.value.ODD_NODE_ID}.${each.value.EVEN_NODE_ID}.${each.value.ACI_POD_ID}.${each.value.TENANT_NAME}.${each.value.MACRO_SEGMENTATION_ZONE}"].id
-  target_dn  = lower(each.value.MULTI_TENANT) == "true" ? "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciGlobalExtPhysVirtualPortChannelPolicyGroup["${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]" : null
+  target_dn  = lower(each.value.MULTI_TENANT) == "true" ? "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciGlobalExtPhysVirtualPortChannelPolicyGroup["${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]" : "topology/pod-${each.value.ACI_POD_ID}/protpaths-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}/pathep-[${aci_leaf_access_bundle_policy_group.localAciTenantPhysVirtualPortChannelPolicyGroup["${each.value.TENANT_NAME}.${each.value.ENDPOINT_NAME}.${each.value.BOND_GROUP}"].name}]"
   if_inst_t = "ext-svi"
   description = join(" ", ["Interface Configuration for", join("-", [each.value.ODD_NODE_ID, each.value.EVEN_NODE_ID]), "as specified by Terraform CICD pipeline."])
   annotation  = "orchestrator:terraform"
