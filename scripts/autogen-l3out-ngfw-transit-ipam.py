@@ -85,6 +85,30 @@ def is_key_already_assigned(ipam_data, tenant_name, macro_segmentation_zone, aci
 
 def update_ipam(data, ipam_data):
     for entry in data:
+        tenant_name = entry['TENANT_NAME']
+        macro_segmentation_zone = entry['MACRO_SEGMENTATION_ZONE']
+    
+        for component in ['NGFW_A_IP', 'NGFW_B_IP', 'NGFW_FLOAT_IP']:
+            component_key = f"{component}"
+            if not is_key_already_assigned(ipam_data, tenant_name, macro_segmentation_zone, component_key):
+                ip_assigned = False
+                for ip, ipam_entry in ipam_data.items():
+                    if (ipam_entry['ACI_NODE_ID'].lower() in ['open', 'free', 'unused', 'available', ''] and
+                        ipam_entry['TENANT_NAME'] == tenant_name and
+                        ipam_entry['MACRO_SEGMENTATION_ZONE'] == macro_segmentation_zone):
+                        print(f"Assigning {component}: {ip} to {component_key}")
+                        ipam_data[ip].update({
+                            'ACI_NODE_ID': component,
+                            'ACI_POD_ID': entry['ACI_POD_ID'],
+                            'TENANT_NAME': tenant_name,
+                            'MACRO_SEGMENTATION_ZONE': macro_segmentation_zone
+                        })
+                        ip_assigned = True
+                        break
+                if not ip_assigned:
+                    print(f"No available IPs left in IPAM for {component_key}.")
+        
+        
         aci_node_id = int(entry["ACI_NODE_ID"])
 
         if aci_node_id % 2 == 0:
@@ -164,13 +188,17 @@ def l3out_ngfw_converter(endpoint_data, output_file_path):
         grouped_data[key]['ODD_NODE_IP'] = ''
         grouped_data[key]['EVEN_NODE_IP'] = ''
         grouped_data[key]["SECONDARY_IP"] = ''
+        grouped_data[key]["NGFW_A_IP"] = ''
+        grouped_data[key]["NGFW_B_IP"] = ''
+        grouped_data[key]["NGFW_FLOAT_IP"] = ''
 
         grouped_data[key]["MULTI_TENANT"] = row.get('MULTI_TENANT', '')
 
     with open(output_file_path, mode='w', newline='', encoding='utf-8') as outfile:
         fieldnames = ['ENDPOINT_NAME', 'BOND_GROUP', 'ODD_NODE_ID', 'ODD_NODE_IP', 
                       'EVEN_NODE_ID', 'EVEN_NODE_IP', 'SECONDARY_IP', 'MULTI_TENANT', 
-                      'ACI_POD_ID', 'TENANT_NAME', 'MACRO_SEGMENTATION_ZONE', 'VLAN_ID']
+                      'ACI_POD_ID', 'TENANT_NAME', 'MACRO_SEGMENTATION_ZONE', 'VLAN_ID',
+                      'NGFW_A_IP', 'NGFW_B_IP', 'NGFW_FLOAT_IP']  # Updated fieldnames
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -187,14 +215,16 @@ def l3out_ngfw_converter(endpoint_data, output_file_path):
                 'ACI_POD_ID': key[4],
                 'TENANT_NAME': key[2],
                 'MACRO_SEGMENTATION_ZONE': key[3],
-                'VLAN_ID': key[5]
+                'VLAN_ID': key[5],
+                'NGFW_A_IP': '',
+                'NGFW_B_IP': '',
+                'NGFW_FLOAT_IP': ''
             }
             writer.writerow(row)
 
     print(f"CSV file {output_file_path} has been created successfully.")
             
 def assign_ips(input_file, output_file):
-    # Read existing data from the output file
     existing_data = []
     if os.path.exists(output_file):
         with open(output_file, mode='r', newline='', encoding='utf-8') as file:
@@ -203,19 +233,18 @@ def assign_ips(input_file, output_file):
                 existing_data.append(row)
         print("Existing data read from output file.")
 
-    # Read and process input file
     with open(input_file, mode='r', newline='', encoding='utf-8') as infile:
         reader = csv.DictReader(infile)
         for row in reader:
-            # Extract CIDR suffix
             cidr_suffix = row['NETWORK_CIDR'].split('/')[-1]
             updated_ip_address = f"{row['IP_ADDRESS']}/{cidr_suffix}"
 
             for existing_row in existing_data:
-                # Check if the rows match based on key fields
                 if (existing_row['TENANT_NAME'] == row['TENANT_NAME'] and 
                     existing_row['MACRO_SEGMENTATION_ZONE'] == row['MACRO_SEGMENTATION_ZONE']):
                     print(f"Found matching row for TENANT_NAME: {row['TENANT_NAME']}, MACRO_SEGMENTATION_ZONE: {row['MACRO_SEGMENTATION_ZONE']}")
+
+                    # Update Node IPs
                     if row['ACI_NODE_ID'] == existing_row['ODD_NODE_ID']:
                         print(f"Updating ODD_NODE_IP for NODE_ID: {row['ACI_NODE_ID']}")
                         existing_row['ODD_NODE_IP'] = updated_ip_address
@@ -226,16 +255,25 @@ def assign_ips(input_file, output_file):
                         print(f"Updating SECONDARY_IP for NODE_ID: {row['ACI_NODE_ID']}")
                         existing_row['SECONDARY_IP'] = updated_ip_address
 
-    # Write updated data back to the output file
+                    # Update NGFW IPs
+                    elif row['ACI_NODE_ID'] == 'NGFW_A_IP':
+                        print(f"Updating NGFW_A_IP for TENANT_NAME: {row['TENANT_NAME']}, MACRO_SEGMENTATION_ZONE: {row['MACRO_SEGMENTATION_ZONE']}")
+                        existing_row['NGFW_A_IP'] = updated_ip_address
+                    elif row['ACI_NODE_ID'] == 'NGFW_B_IP':
+                        print(f"Updating NGFW_B_IP for TENANT_NAME: {row['TENANT_NAME']}, MACRO_SEGMENTATION_ZONE: {row['MACRO_SEGMENTATION_ZONE']}")
+                        existing_row['NGFW_B_IP'] = updated_ip_address
+                    elif row['ACI_NODE_ID'] == 'NGFW_FLOAT_IP':
+                        print(f"Updating NGFW_FLOAT_IP for TENANT_NAME: {row['TENANT_NAME']}, MACRO_SEGMENTATION_ZONE: {row['MACRO_SEGMENTATION_ZONE']}")
+                        existing_row['NGFW_FLOAT_IP'] = updated_ip_address
+
     with open(output_file, mode='w', newline='', encoding='utf-8') as outfile:
-        fieldnames = ['ENDPOINT_NAME','BOND_GROUP','ODD_NODE_ID','ODD_NODE_IP','EVEN_NODE_ID','EVEN_NODE_IP','SECONDARY_IP','MULTI_TENANT','ACI_POD_ID','TENANT_NAME','MACRO_SEGMENTATION_ZONE','VLAN_ID']
+        fieldnames = ['ENDPOINT_NAME','BOND_GROUP','ODD_NODE_ID','ODD_NODE_IP','EVEN_NODE_ID','EVEN_NODE_IP','SECONDARY_IP','MULTI_TENANT','ACI_POD_ID','TENANT_NAME','MACRO_SEGMENTATION_ZONE','VLAN_ID', 'NGFW_A_IP', 'NGFW_B_IP', 'NGFW_FLOAT_IP']
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(existing_data)
         print("Updated data written back to the output file.")
 
     print("assign_ips function completed.")
-
 
 def main():
     source_ipam_file = './data/app-mgmt-tenant-configuration.csv'
