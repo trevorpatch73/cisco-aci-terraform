@@ -24,7 +24,7 @@ def generate_ipam_data(source_data, existing_ipam):
     processed_networks = set()
 
     for row in source_data:
-        network_cidr = row['TRANSIT_SUBNET']
+        network_cidr = row['ZONE_TRANSIT_SUBNET']
         tenant_name = row['TENANT_NAME']
         macro_segmentation_zone = row['MACRO_SEGMENTATION_ZONE']
         subnet = ipaddress.ip_network(network_cidr, strict=False)
@@ -276,7 +276,7 @@ def assign_ips(input_file, output_file):
     print("assign_ips function completed.")
 
 def main():
-    source_ipam_file = './data/app-mgmt-tenant-configuration.csv'
+    source_ipam_file = './data/tenant-configuration.csv'
     destination_ipam_file = './data/autogen-l3out-ngfw-transit-ipam.csv'
     ipam_headers = ["NETWORK_CIDR", "IP_ADDRESS", "TENANT_NAME", "MACRO_SEGMENTATION_ZONE", "ACI_POD_ID", "ACI_NODE_ID"]
 

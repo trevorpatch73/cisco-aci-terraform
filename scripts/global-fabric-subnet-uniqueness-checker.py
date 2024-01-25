@@ -1,7 +1,7 @@
 import csv
 import sys
 
-filename = '../data/app-mgmt-tenant-configuration.csv'
+filename = '../data/tenant-configuration.csv'
 
 def read_csv(file_path):
     with open(file_path, mode='r') as infile:

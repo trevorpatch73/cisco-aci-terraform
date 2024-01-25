@@ -7,7 +7,7 @@ resource "null_resource" "GlobalFabricVlanUniquenessCheckerPython" {
   }
 
   triggers = {
-    csv_hash = filemd5("${path.root}/data/app-mgmt-tenant-configuration.csv")
+    csv_hash = filemd5("${path.root}/data/tenant-configuration.csv")
   }
 }
 
@@ -18,7 +18,7 @@ resource "null_resource" "GlobalFabricSubnetUniquenessCheckerPython" {
   }
 
   triggers = {
-    csv_hash = filemd5("${path.root}/data/app-mgmt-tenant-configuration.csv")
+    csv_hash = filemd5("${path.root}/data/tenant-configuration.csv")
   }
 }
 
@@ -486,8 +486,8 @@ resource "aci_ranges" "localAciTenantL3ExtVlanPoolRangesIteration" {
   annotation   = "orchestrator:terraform"
   description  = join(" ", [each.value.TENANT_NAME, each.value.MACRO_SEGMENTATION_ZONE, "L3Out Transit VLAN was created segmentation zone via Terraform"])
   vlan_pool_dn = aci_vlan_pool.localAciTenantL3ExtVlanPoolIteration[each.value.TENANT_NAME].id
-  from         = "vlan-${each.value.TRANSIT_VLAN_ID}"
-  to           = "vlan-${each.value.TRANSIT_VLAN_ID}"
+  from         = "vlan-${each.value.ZONE_TRANSIT_VLAN_ID}"
+  to           = "vlan-${each.value.ZONE_TRANSIT_VLAN_ID}"
   alloc_mode   = "inherit"
   role         = "external"
 

@@ -1,5 +1,5 @@
 locals {
-  app_tenant_iterations = csvdecode(file("./data/app-mgmt-tenant-configuration.csv"))
+  app_tenant_iterations = csvdecode(file("./data/tenant-configuration.csv"))
 
   distinct_tenants = toset(distinct([for tenant in local.app_tenant_iterations : tenant.TENANT_NAME]))
 
@@ -28,8 +28,8 @@ locals {
         split(";", iteration.INBOUND_PORTS),
         split(";", iteration.OUTBOUND_PORTS)
       ]))
-      TRANSIT_VLAN_ID         = iteration.TRANSIT_VLAN_ID
-      TRANSIT_SUBNET          = iteration.TRANSIT_SUBNET
+      ZONE_TRANSIT_VLAN_ID         = iteration.ZONE_TRANSIT_VLAN_ID
+      ZONE_TRANSIT_SUBNET          = iteration.ZONE_TRANSIT_SUBNET
     }
   }
 
