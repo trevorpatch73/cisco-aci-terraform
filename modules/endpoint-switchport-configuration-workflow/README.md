@@ -29,6 +29,10 @@ No modules.
 | [aci_l3out_path_attachment.localAciTenantNgfwL3OutNodeProfIntProfSviVpcPathIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_path_attachment) | resource |
 | [aci_l3out_path_attachment_secondary_ip.localAciTenantNgfwL3OutNodeProfIntProfSviVpcSecIpAIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_path_attachment_secondary_ip) | resource |
 | [aci_l3out_path_attachment_secondary_ip.localAciTenantNgfwL3OutNodeProfIntProfSviVpcSecIpBIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_path_attachment_secondary_ip) | resource |
+| [aci_l3out_static_route.localAciL3OutNodeProfFabEvenNodeDefaultRouteIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_static_route) | resource |
+| [aci_l3out_static_route.localAciL3OutNodeProfFabOddNodeDefaultRouteIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_static_route) | resource |
+| [aci_l3out_static_route_next_hop.localAciL3OutNodeProfFabEvenNodeDefRtNextHopNgfwIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_static_route_next_hop) | resource |
+| [aci_l3out_static_route_next_hop.localAciL3OutNodeProfFabOddNodeDefRtNextHopNgfwIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_static_route_next_hop) | resource |
 | [aci_l3out_vpc_member.localAciTenantNgfwL3OutNodeProfIntProfSviVpcMemberAIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_vpc_member) | resource |
 | [aci_l3out_vpc_member.localAciTenantNgfwL3OutNodeProfIntProfSviVpcMemberBIteration](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/l3out_vpc_member) | resource |
 | [aci_lacp_policy.localAciLacpActivePolicy](https://registry.terraform.io/providers/ciscodevnet/aci/latest/docs/resources/lacp_policy) | resource |

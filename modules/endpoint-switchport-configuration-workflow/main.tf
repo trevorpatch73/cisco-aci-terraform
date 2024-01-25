@@ -668,6 +668,47 @@ resource "aci_logical_node_to_fabric_node" "localAciL3OutNodeProfFabOddNodeAssoc
   rtr_id_loop_back          = "yes"  
 }
 
+resource "aci_l3out_static_route" "localAciL3OutNodeProfFabOddNodeDefaultRouteIteration" {
+  for_each    = local.TenantExtNodeProfNgfwFabNodeAssoc_List
+
+  fabric_node_dn  = aci_logical_node_to_fabric_node.localAciL3OutNodeProfFabOddNodeAssocIteration[each.key].id
+  ip              = "0.0.0.0/0"
+  aggregate       = "no"
+  annotation      = "orchestrator:terraform"
+  name_alias      = "DefaultRoute"
+  pref            = "1"
+  rt_ctrl         = "unspecified"
+  description     = "Default Route out of Macro Segmentation Zone To NGFW"
+  
+  lifecycle {
+    ignore_changes = [relation_ip_rs_route_track]
+  }    
+}
+
+resource "aci_l3out_static_route_next_hop" "localAciL3OutNodeProfFabOddNodeDefRtNextHopNgfwIteration" {
+  for_each  = local.TenantExtNodeProfNgfwPathAssoc_List
+
+  static_route_dn       = "uni/tn-${each.value.TENANT_NAME}/out-${each.value.TENANT_NAME}_${each.value.MACRO_SEGMENTATION_ZONE}_VRF_NGFW_L3OUT/lnodep-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}_NODE_PROF/rsnodeL3OutAtt-[topology/pod-${each.value.ACI_POD_ID}/node-${each.value.ODD_NODE_ID}]/rt-[0.0.0.0/0]"
+  nh_addr               = "${each.value.NGFW_FLOAT_IP_ONLY}"
+  annotation            = "orchestrator:terraform"
+  name_alias            = "NGFW_FLOAT_IP"
+  pref                  = "unspecified"
+  nexthop_profile_type  = "prefix"
+  description           = "NGFW_FLOAT_IP"
+
+  lifecycle {
+    ignore_changes = [
+      relation_ip_rs_nexthop_route_track,
+      relation_ip_rs_nh_track_member
+    ]
+  }
+  
+  depends_on = [
+    aci_l3out_static_route.localAciL3OutNodeProfFabOddNodeDefaultRouteIteration
+  ]
+
+}
+
 resource "aci_logical_node_to_fabric_node" "localAciL3OutNodeProfFabEvenNodeAssocIteration" {
   for_each    = local.TenantExtNodeProfNgfwFabNodeAssoc_List
 
@@ -677,4 +718,45 @@ resource "aci_logical_node_to_fabric_node" "localAciL3OutNodeProfFabEvenNodeAsso
   config_issues             = "none"
   rtr_id                    = "${each.value.EVEN_NODE_IP}"
   rtr_id_loop_back          = "yes"  
+}
+
+resource "aci_l3out_static_route" "localAciL3OutNodeProfFabEvenNodeDefaultRouteIteration" {
+  for_each    = local.TenantExtNodeProfNgfwFabNodeAssoc_List
+
+  fabric_node_dn  = aci_logical_node_to_fabric_node.localAciL3OutNodeProfFabEvenNodeAssocIteration[each.key].id
+  ip              = "0.0.0.0/0"
+  aggregate       = "no"
+  annotation      = "orchestrator:terraform"
+  name_alias      = "DefaultRoute"
+  pref            = "1"
+  rt_ctrl         = "unspecified"
+  description     = "Default Route out of Macro Segmentation Zone To NGFW"
+  
+  lifecycle {
+    ignore_changes = [relation_ip_rs_route_track]
+  }    
+}
+
+resource "aci_l3out_static_route_next_hop" "localAciL3OutNodeProfFabEvenNodeDefRtNextHopNgfwIteration" {
+  for_each  = local.TenantExtNodeProfNgfwPathAssoc_List
+
+  static_route_dn       = "uni/tn-${each.value.TENANT_NAME}/out-${each.value.TENANT_NAME}_${each.value.MACRO_SEGMENTATION_ZONE}_VRF_NGFW_L3OUT/lnodep-${each.value.ODD_NODE_ID}-${each.value.EVEN_NODE_ID}_NODE_PROF/rsnodeL3OutAtt-[topology/pod-${each.value.ACI_POD_ID}/node-${each.value.EVEN_NODE_ID}]/rt-[0.0.0.0/0]"
+  nh_addr               = "${each.value.NGFW_FLOAT_IP_ONLY}"
+  annotation            = "orchestrator:terraform"
+  name_alias            = "NGFW_FLOAT_IP"
+  pref                  = "unspecified"
+  nexthop_profile_type  = "prefix"
+  description           = "NGFW_FLOAT_IP"
+
+  lifecycle {
+    ignore_changes = [
+      relation_ip_rs_nexthop_route_track,
+      relation_ip_rs_nh_track_member
+    ]
+  }
+  
+  depends_on = [
+    aci_l3out_static_route.localAciL3OutNodeProfFabEvenNodeDefaultRouteIteration
+  ]
+
 }

@@ -297,6 +297,24 @@ locals {
                   }
                 }     
 
+  TenantPcIntSelectEpgAssoc_GroupList = {
+    for i in local.iterations : "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => [i]...
+    if lower(i.BOND) == "true" && lower(i.DUAL_HOME) == "false" && lower(i.MULTI_TENANT) == "false" && lower(i.ACI_DOMAIN) == "phys"
+  }
+  
+  TenantPcIntSelectEpgAssoc_FlatList = flatten([
+    for key, items in local.TenantPcIntSelectEpgAssoc_GroupList : 
+      [{ 
+        TENANT_NAME           = items[0][0].TENANT_NAME, 
+        ENDPOINT_NAME         = items[0][0].ENDPOINT_NAME,
+        BOND_GROUP            = items[0][0].BOND_GROUP
+      }]
+  ])
+  
+  TenantPcIntSelectEpgAssoc_UniqueList = { for idx, i in local.TenantPortChannelPolicyGroup_FlatList : 
+    "${i.TENANT_NAME}.${i.ENDPOINT_NAME}.${i.BOND_GROUP}" => i 
+  }
+
 ######### VIRTUAL PORT-CHANNEL L2 PORTS #########
 
   TenantVirtualPortChannelPolicyGroup_GroupList = {
@@ -499,7 +517,7 @@ locals {
   
   TenantExtNodeProfNgfwFabNodeAssoc_List = {
     for i in local.TenantExtNodeProfNgfwFabNodeAssoc_Iterations :
-    "${i.ACI_POD_ID}.${i.ODD_NODE_ID}.${i.ODD_NODE_IP}.${i.EVEN_NODE_ID}.${i.EVEN_NODE_IP}.${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}.${i.APPLICATION_NAME}" => {
+    "${i.ACI_POD_ID}.${i.ODD_NODE_ID}.${i.ODD_NODE_IP}.${i.EVEN_NODE_ID}.${i.EVEN_NODE_IP}.${i.TENANT_NAME}.${i.MACRO_SEGMENTATION_ZONE}" => {
       ACI_POD_ID                = i.ACI_POD_ID
       ODD_NODE_ID               = i.ODD_NODE_ID
       ODD_NODE_IP               = i.ODD_NODE_IP
@@ -507,7 +525,6 @@ locals {
       EVEN_NODE_IP              = i.EVEN_NODE_IP
       TENANT_NAME               = i.TENANT_NAME 
       MACRO_SEGMENTATION_ZONE   = i.MACRO_SEGMENTATION_ZONE
-      APPLICATION_NAME          = i.APPLICATION_NAME
     }
   }
 
@@ -515,19 +532,27 @@ locals {
   
   TenantExtNodeProfNgfwPathAssoc_List = {
     for i in local.TenantExtNodeProfNgfwPathAssoc_Iterations :
-    "${i.ENDPOINT_NAME}:${i.BOND_GROUP}:${i.ODD_NODE_ID}:${i.ODD_NODE_IP}:${i.EVEN_NODE_ID}:${i.EVEN_NODE_IP}:${i.SECONDARY_IP}:${i.MULTI_TENANT}:${i.ACI_POD_ID}:${i.TENANT_NAME}:${i.MACRO_SEGMENTATION_ZONE}:${i.VLAN_ID}" => {
+    "${i.ENDPOINT_NAME}:${i.BOND_GROUP}:${i.ODD_NODE_ID}:${i.ODD_NODE_IP}:${i.EVEN_NODE_ID}:${i.EVEN_NODE_IP}:${i.SECONDARY_IP}:${i.MULTI_TENANT}:${i.ACI_POD_ID}:${i.TENANT_NAME}:${i.MACRO_SEGMENTATION_ZONE}:${i.VLAN_ID}:${i.NGFW_A_IP}:${i.NGFW_B_IP}:${i.NGFW_FLOAT_IP}" => {
       ENDPOINT_NAME           = i.ENDPOINT_NAME
       BOND_GROUP              = i.BOND_GROUP
       ODD_NODE_ID             = i.ODD_NODE_ID
-      ODD_NODE_IP             = i.ODD_NODE_IP
+      ODD_NODE_IP             = i.ODD_NODE_IP // IP with CIDR
+      ODD_NODE_IP_ONLY        = split("/", i.ODD_NODE_IP)[0] // IP without CIDR
       EVEN_NODE_ID            = i.EVEN_NODE_ID
-      EVEN_NODE_IP            = i.EVEN_NODE_IP
+      EVEN_NODE_IP            = i.EVEN_NODE_IP // IP with CIDR
+      EVEN_NODE_IP_ONLY       = split("/", i.EVEN_NODE_IP)[0] // IP without CIDR
       SECONDARY_IP            = i.SECONDARY_IP
       MULTI_TENANT            = i.MULTI_TENANT
       ACI_POD_ID              = i.ACI_POD_ID
       TENANT_NAME             = i.TENANT_NAME
       MACRO_SEGMENTATION_ZONE = i.MACRO_SEGMENTATION_ZONE
       VLAN_ID                 = i.VLAN_ID
+      NGFW_A_IP               = i.NGFW_A_IP // IP with CIDR
+      NGFW_A_IP_ONLY          = split("/", i.NGFW_A_IP)[0] // IP without CIDR
+      NGFW_B_IP               = i.NGFW_B_IP // IP with CIDR
+      NGFW_B_IP_ONLY          = split("/", i.NGFW_B_IP)[0] // IP without CIDR      
+      NGFW_FLOAT_IP           = i.NGFW_FLOAT_IP // IP with CIDR
+      NGFW_FLOAT_IP_ONLY      = split("/", i.NGFW_FLOAT_IP)[0] // IP without CIDR      
     }
   }
 
